@@ -11,7 +11,7 @@ one instance of this worker owns any given partition at a time, which is
 what makes bid processing for a single auction strictly serial with zero
 extra locking required.
 
-Offset commit happens only AFTER the Postgres write in decide_bid()
+Offset commit happens only AFTER the SQL Server write in decide_bid()
 succeeds, so a crash between "consumed" and "committed" replays the message
 on restart rather than silently dropping a bid - the unique index on
 (kafka_partition, kafka_offset) in models/auction.py makes that replay

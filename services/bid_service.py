@@ -4,7 +4,7 @@ in the architecture document (Section 5):
 - submit_bid(): steps 1-2, called from the API layer. Fast pre-validation,
   then publish to Kafka. Never decides accept/reject itself.
 - decide_bid(): steps 3-5, called from the auction worker. The single
-  source of truth for whether a bid wins - owns the Postgres write, the
+  source of truth for whether a bid wins - owns the SQL Server write, the
   Redis cache update, and the result event publication.
 
 Kept framework-agnostic (raises services.exceptions, not HTTPException) so

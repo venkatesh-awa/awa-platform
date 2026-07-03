@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, PostgresDsn, RedisDsn, field_validator
+from pydantic import Field, RedisDsn, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -32,9 +32,12 @@ class Settings(BaseSettings):
     cors_allowed_origins: list[str] = Field(default_factory=list)
 
     # --- Database ---
-    database_url: PostgresDsn
+    database_url: str
     database_pool_size: int = 10
     database_max_overflow: int = 20
+    database_pool_timeout: int = 30
+    database_pool_recycle: int = 1800
+    database_echo: bool = False
 
     # --- Redis ---
     redis_url: RedisDsn

@@ -7,7 +7,10 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://test:test@localhost:5432/test")
+os.environ.setdefault(
+    "DATABASE_URL",
+    "mssql+aioodbc://test:test@localhost:1433/test?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes",
+)
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 os.environ.setdefault("AUTH_ISSUER", "https://test-issuer.example.com/")

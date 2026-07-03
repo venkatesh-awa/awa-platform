@@ -11,7 +11,6 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 revision: str = "0001_initial"
 down_revision: str | None = None
@@ -22,8 +21,8 @@ depends_on: Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "auctions",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("vehicle_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("id", sa.Uuid(as_uuid=True), primary_key=True),
+        sa.Column("vehicle_id", sa.Uuid(as_uuid=True), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="scheduled"),
         sa.Column("starting_price", sa.Numeric(12, 2), nullable=False),
         sa.Column("reserve_price", sa.Numeric(12, 2), nullable=True),
@@ -39,14 +38,14 @@ def upgrade() -> None:
 
     op.create_table(
         "bids",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.Uuid(as_uuid=True), primary_key=True),
         sa.Column(
             "auction_id",
-            postgresql.UUID(as_uuid=True),
+            sa.Uuid(as_uuid=True),
             sa.ForeignKey("auctions.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column("bidder_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column("bidder_id", sa.Uuid(as_uuid=True), nullable=False),
         sa.Column("amount", sa.Numeric(12, 2), nullable=False),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="pending"),
         sa.Column("kafka_partition", sa.Integer(), nullable=True),
@@ -62,7 +61,7 @@ def upgrade() -> None:
         "bids",
         ["kafka_partition", "kafka_offset"],
         unique=True,
-        postgresql_where=sa.text("kafka_offset IS NOT NULL"),
+        mssql_where=sa.text("kafka_offset IS NOT NULL"),
     )
 
 

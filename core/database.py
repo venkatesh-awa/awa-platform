@@ -1,6 +1,6 @@
 """Async database engine, session factory, and FastAPI dependency.
 
-PostgreSQL is the source of truth (see architecture doc, section 8). The
+SQL Server is the source of truth (see architecture doc, section 8). The
 engine is created once at startup and disposed at shutdown; sessions are
 short-lived and scoped to a single request via dependency injection.
 """
@@ -35,8 +35,9 @@ def init_engine() -> AsyncEngine:
         pool_size=settings.database_pool_size,
         max_overflow=settings.database_max_overflow,
         pool_pre_ping=True,
-        pool_recycle=1800,
-        echo=False,
+        pool_timeout=settings.database_pool_timeout,
+        pool_recycle=settings.database_pool_recycle,
+        echo=settings.database_echo,
     )
     _session_factory = async_sessionmaker(
         bind=_engine,

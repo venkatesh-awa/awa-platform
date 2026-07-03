@@ -1,7 +1,7 @@
 """Redis client: connection pooling, health checks, pub/sub helpers, and the
 atomic bid-arbitration script referenced in the architecture document
 (Section 5.2). Redis here is a derived cache, never the source of truth -
-every value it holds must be reconstructible from PostgreSQL.
+every value it holds must be reconstructible from SQL Server.
 """
 
 from __future__ import annotations

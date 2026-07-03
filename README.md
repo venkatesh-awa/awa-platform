@@ -1,7 +1,7 @@
 # AWA Platform — Sprint 0 Scaffold
 
 Production-ready foundation for the Al Wataneya Auction (AWA) live-auction
-platform: Python FastAPI backend, Kafka + Redis event backbone, PostgreSQL,
+platform: Python FastAPI backend, Kafka + Redis event backbone, SQL Server,
 and the supporting CI/CD, observability, and Kubernetes config. This covers
 Sprint 0 from the sprint plan (`T0001`–`T0008`): repo/CI setup, cloud infra
 baseline, service skeletons, auth foundation, Kafka topic design,
@@ -33,7 +33,7 @@ infra/
   kafka/               topic creation script (partitioning strategy documented inline)
   k8s/                 Deployment/Service/HPA manifests for each service
   observability/       Prometheus + OpenTelemetry collector config
-docker-compose.yml    local stack: Postgres, Redis, Kafka (KRaft), backend, worker
+docker-compose.yml    local stack: SQL Server, Redis, Kafka (KRaft), backend, worker
 ```
 
 ### Why a services layer
@@ -58,11 +58,12 @@ cp .env.example .env      # adjust values if needed
 docker compose up --build
 ```
 
-This brings up Postgres, Redis, a single-broker Kafka cluster (topics
+This brings up SQL Server, Redis, a single-broker Kafka cluster (topics
 auto-created by `kafka-topics-init`), the backend API on `:8000`, and the
 auction worker (no exposed port — consumes Kafka).
 
-Apply database migrations once Postgres is healthy:
+Apply database migrations once SQL Server is healthy (and `mssql-init` has
+created the `awa` database):
 
 ```bash
 docker compose exec backend alembic upgrade head
@@ -100,7 +101,7 @@ pip install -e ".[dev]" && pytest
   (liveness never checks dependencies, readiness always does — see
   `api/v1/health.py`), global exception handling, CORS.
 - The full bid critical path: REST submission → Kafka publish (keyed by
-  `auction_id`) → single-writer auction worker → Postgres commit → Redis
+  `auction_id`) → single-writer auction worker → SQL Server commit → Redis
   cache update → Redis pub/sub → WebSocket broadcast — matching the
   architecture document exactly, including the idempotent-replay guarantee
   via the unique `(kafka_partition, kafka_offset)` index.

@@ -1,4 +1,4 @@
-"""Core ORM models. PostgreSQL is the source of truth (architecture doc Section 8) -
+"""Core ORM models. SQL Server is the source of truth (architecture doc Section 8) -
 Redis and any in-memory state must always be reconstructible from these tables.
 """
 
@@ -8,8 +8,17 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, Numeric, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Numeric,
+    String,
+    Uuid,
+    func,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
@@ -18,8 +27,8 @@ from core.database import Base
 class Auction(Base):
     __tablename__ = "auctions"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    vehicle_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    vehicle_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="scheduled")
     starting_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     reserve_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
@@ -42,11 +51,11 @@ class Auction(Base):
 class Bid(Base):
     __tablename__ = "bids"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     auction_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("auctions.id", ondelete="CASCADE"), nullable=False
+        Uuid(as_uuid=True), ForeignKey("auctions.id", ondelete="CASCADE"), nullable=False
     )
-    bidder_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    bidder_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     # kafka_offset ties a bid row back to the exact log position that produced it,
@@ -69,6 +78,6 @@ class Bid(Base):
             "kafka_partition",
             "kafka_offset",
             unique=True,
-            postgresql_where="kafka_offset IS NOT NULL",
+            mssql_where=text("kafka_offset IS NOT NULL"),
         ),
     )
