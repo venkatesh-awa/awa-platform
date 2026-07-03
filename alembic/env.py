@@ -10,7 +10,17 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from core.config import get_settings
 from core.database import Base
-from models import Auction, Bid  # noqa: F401 - registers models with Base.metadata
+from models import (  # noqa: F401 - registers models with Base.metadata
+    Auction,
+    AuctionCategory,
+    Bid,
+    FeaturedAuction,
+    FooterLink,
+    FooterSettings,
+    HowItWorksStep,
+    MenuItem,
+    ValueAddedService,
+)
 
 config = context.config
 if config.config_file_name is not None:
