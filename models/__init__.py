@@ -8,6 +8,12 @@ from models.content import (
     MenuItem,
     ValueAddedService,
 )
+from models.user import (
+    EmailVerificationToken,
+    PasswordResetToken,
+    RefreshToken,
+    User,
+)
 
 __all__ = [
     "Auction",
@@ -19,4 +25,8 @@ __all__ = [
     "HowItWorksStep",
     "MenuItem",
     "ValueAddedService",
+    "User",
+    "RefreshToken",
+    "PasswordResetToken",
+    "EmailVerificationToken",
 ]

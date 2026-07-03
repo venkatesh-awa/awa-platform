@@ -14,11 +14,15 @@ from models import (  # noqa: F401 - registers models with Base.metadata
     Auction,
     AuctionCategory,
     Bid,
+    EmailVerificationToken,
     FeaturedAuction,
     FooterLink,
     FooterSettings,
     HowItWorksStep,
     MenuItem,
+    PasswordResetToken,
+    RefreshToken,
+    User,
     ValueAddedService,
 )
 

@@ -37,3 +37,36 @@ class MalformedBidEvent(Exception):
     """Raised when a message consumed off the Kafka bids topic doesn't parse as
     a valid bid envelope - treated as a poison message by the auction worker,
     not retried indefinitely."""
+
+
+# --- Authentication (local email/password) ---
+
+
+class EmailAlreadyRegisteredError(Exception):
+    """Sign-up attempted with an email that already has an account."""
+
+    def __init__(self, email: str) -> None:
+        self.email = email
+        super().__init__(f"Email already registered: {email}")
+
+
+class InvalidCredentialsError(Exception):
+    """Sign-in failed - wrong email or password. Deliberately does not say which,
+    to avoid confirming which emails have accounts."""
+
+
+class AccountInactiveError(Exception):
+    """The account exists but has been deactivated."""
+
+
+class AccountLockedError(Exception):
+    """Too many failed sign-ins; the account is temporarily locked."""
+
+    def __init__(self, retry_after_seconds: int) -> None:
+        self.retry_after_seconds = retry_after_seconds
+        super().__init__(f"Account locked; retry in {retry_after_seconds}s")
+
+
+class InvalidTokenError(Exception):
+    """A refresh / password-reset / email-verification token is unknown, already
+    used, revoked, or expired. Uniform for all cases so callers don't leak which."""

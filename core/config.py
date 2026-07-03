@@ -9,8 +9,12 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field, RedisDsn, field_validator
+from pydantic import Field, RedisDsn, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Placeholder used as the JWT signing secret when none is supplied. Fine for
+# local/dev; rejected at startup in production (see _validate_prod_secrets).
+_DEV_JWT_SECRET = "dev-insecure-change-me"  # noqa: S105 - not a real credential
 
 
 class Settings(BaseSettings):
@@ -48,11 +52,28 @@ class Settings(BaseSettings):
     kafka_topic_bids: str = "auction.bids"
     kafka_topic_bid_results: str = "auction.bid_results"
 
-    # --- Auth ---
+    # --- Auth: external IdP token verification (Azure B2C / UAE Pass) ---
     auth_issuer: str
     auth_audience: str
     auth_jwks_url: str
     auth_jwt_algorithms: list[str] = Field(default_factory=lambda: ["RS256"])
+
+    # --- Auth: local email/password (sign up / sign in / password reset) ---
+    # HS256 secret used to sign the access tokens THIS service issues (distinct
+    # from the external-IdP tokens verified above). Must be overridden in prod.
+    auth_jwt_secret: str = _DEV_JWT_SECRET
+    auth_local_issuer: str = "awa-backend"
+    # Access token: short-lived JWT. Refresh token: long-lived opaque token,
+    # stored hashed and rotated on use. Reset/verify tokens: single-use, hashed.
+    auth_access_token_ttl_seconds: int = 900  # 15 minutes
+    auth_refresh_token_ttl_seconds: int = 2_592_000  # 30 days
+    auth_password_reset_ttl_seconds: int = 3_600  # 1 hour
+    auth_email_verification_ttl_seconds: int = 86_400  # 24 hours
+    # Brute-force protection: lock the account for a window after N failures.
+    auth_max_failed_logins: int = 5
+    auth_lockout_seconds: int = 900  # 15 minutes
+    # Base URL of the web app, used to build password-reset / verify links.
+    frontend_base_url: str = "http://localhost:5173"
 
     # --- Observability ---
     otel_exporter_otlp_endpoint: str | None = None
@@ -67,6 +88,14 @@ class Settings(BaseSettings):
         if upper not in allowed:
             raise ValueError(f"log_level must be one of {allowed}, got {v!r}")
         return upper
+
+    @model_validator(mode="after")
+    def _validate_prod_secrets(self) -> Settings:
+        # Fail fast rather than silently sign production tokens with a known
+        # placeholder secret (which would let anyone forge access tokens).
+        if self.environment == "production" and self.auth_jwt_secret == _DEV_JWT_SECRET:
+            raise ValueError("AUTH_JWT_SECRET must be set to a strong value in production")
+        return self
 
     @property
     def is_production(self) -> bool:
