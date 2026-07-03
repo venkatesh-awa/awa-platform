@@ -1,0 +1,33 @@
+# Auction workers must respect Kafka's partition-to-consumer assignment
+# (architecture doc Section 9): replica count should not exceed the
+# auction.bids topic's partition count (50 in infra/kafka/create_topics.sh),
+# since extra pods beyond that sit idle. No HPA here deliberately - scale
+# this by changing `replicas` and coordinating with the partition count.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: awa-auction-worker
+  namespace: awa-platform
+  labels: { app: awa-auction-worker }
+spec:
+  replicas: 6
+  selector:
+    matchLabels: { app: awa-auction-worker }
+  template:
+    metadata:
+      labels: { app: awa-auction-worker }
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: awa-auction-worker
+          image: awa-backend:latest
+          command: ["python", "-m", "workers.auction_worker"]
+          envFrom:
+            - configMapRef: { name: awa-backend-config }
+            - secretRef: { name: awa-backend-secrets }
+          resources:
+            requests: { cpu: "250m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "512Mi" }
+          # No HTTP endpoints on this process - liveness is inferred by k8s
+          # from process exit status; add a sidecar health file check if a
+          # more granular signal is needed later.

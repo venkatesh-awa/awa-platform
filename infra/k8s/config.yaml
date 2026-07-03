@@ -1,0 +1,34 @@
+# ConfigMap holds non-sensitive config. Secrets below are PLACEHOLDERS ONLY -
+# in a real cluster these values come from your secrets manager (e.g. AWS
+# Secrets Manager / Azure Key Vault via the External Secrets Operator), never
+# committed to git. This file documents the required keys.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: awa-backend-config
+  namespace: awa-platform
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  LOG_JSON: "true"
+  API_V1_PREFIX: "/api/v1"
+  KAFKA_CONSUMER_GROUP: "awa-auction-workers"
+  KAFKA_TOPIC_BIDS: "auction.bids"
+  KAFKA_TOPIC_BID_RESULTS: "auction.bid_results"
+  OTEL_SERVICE_NAME: "awa-backend"
+  PROMETHEUS_METRICS_PATH: "/metrics"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: awa-backend-secrets
+  namespace: awa-platform
+type: Opaque
+stringData:
+  DATABASE_URL: "REPLACE_ME_VIA_SECRETS_MANAGER"
+  REDIS_URL: "REPLACE_ME_VIA_SECRETS_MANAGER"
+  KAFKA_BOOTSTRAP_SERVERS: "REPLACE_ME_VIA_SECRETS_MANAGER"
+  AUTH_ISSUER: "REPLACE_ME_VIA_SECRETS_MANAGER"
+  AUTH_AUDIENCE: "REPLACE_ME_VIA_SECRETS_MANAGER"
+  AUTH_JWKS_URL: "REPLACE_ME_VIA_SECRETS_MANAGER"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "REPLACE_ME_VIA_SECRETS_MANAGER"
