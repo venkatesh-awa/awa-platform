@@ -55,6 +55,7 @@ async def get_admin_dashboard_cards(
             description=_pick(row.description_en, row.description_ar, lang) or None,
             icon_class=row.icon_class,
             url=row.url,
+            image_url=row.image_url,
             sort_order=row.sort_order,
         )
         for row in result.scalars().all()

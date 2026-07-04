@@ -28,4 +28,5 @@ class AdminDashboardCardRead(BaseModel):
     description: str | None
     icon_class: str | None
     url: str
+    image_url: str | None
     sort_order: int = 0

@@ -37,6 +37,7 @@ def _dashboard_card(label_en: str, label_ar: str, url: str, section_key: str = "
         description_en="Description EN",
         description_ar="Description AR",
         icon_class="fa-solid fa-car",
+        image_url="https://example.com/image.png",
         url=url,
         sort_order=1,
         is_active=True,
@@ -83,7 +84,7 @@ async def test_get_admin_dashboard_cards_filters_by_section(
     assert body[0]["label"] == "Add a New Car"
     assert body[0]["section_key"] == "sellers"
     assert body[0]["url"] == "/admin/sellers/add-a-new-car"
-
+    assert body[0]["image_url"] == "https://example.com/image.png"
 
 async def test_get_admin_dashboard_cards_requires_section_query_param(
     client: AsyncClient, mock_db_session: MagicMock

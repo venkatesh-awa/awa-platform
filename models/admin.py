@@ -56,6 +56,7 @@ class AdminDashboardCard(Base):
     description_ar: Mapped[str | None] = mapped_column(Unicode(300), nullable=True)
     icon_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
     url: Mapped[str] = mapped_column(String(500), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
