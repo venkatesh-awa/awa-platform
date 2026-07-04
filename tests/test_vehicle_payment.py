@@ -95,3 +95,37 @@ async def test_get_vehicle_payment_status_filters_by_status(
     assert response.status_code == 200
     body = response.json()
     assert body["records"][0]["payment_status"] == "paid_awaiting_documents"
+
+
+async def test_get_vehicle_in_store_returns_paginated_records(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    mock_db_session.execute.side_effect = [
+        _mock_scalar_one_result(1),
+        _mock_scalars_result([_record(lot_no="103147")]),
+    ]
+
+    response = await client.get("/api/v1/admin/vehicle-in-store?page=1&page_size=50")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert body["records"][0]["id"] == "103147"
+    assert body["records"][0]["chassis_number"] == "021225191836429"
+    assert body["records"][0]["title"] == "Buick Other 2019"
+    assert body["records"][0]["location"] == "Dubai"
+    assert "payment_status" not in body["records"][0]
+
+
+async def test_get_vehicle_in_store_filters_by_id(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    mock_db_session.execute.side_effect = [
+        _mock_scalar_one_result(1),
+        _mock_scalars_result([_record(lot_no="103147")]),
+    ]
+
+    response = await client.get("/api/v1/admin/vehicle-in-store?id=103147")
+
+    assert response.status_code == 200
+    assert response.json()["records"][0]["id"] == "103147"

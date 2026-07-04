@@ -16,7 +16,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db_session
 from schemas.admin import AdminDashboardCardRead, AdminNavItemRead, VehicleStatusMetricRead
-from schemas.vehicle_payment import VehiclePaymentRecordPage, VehiclePaymentStatusCounts
+from schemas.vehicle_payment import (
+    VehicleInStoreRecordPage,
+    VehiclePaymentRecordPage,
+    VehiclePaymentStatusCounts,
+)
 from services import admin_service, vehicle_payment_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -75,6 +79,31 @@ async def get_vehicle_payment_status(
         chassis_number=chassis_number,
         buyer_name=buyer_name,
         seller_name=seller_name,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/vehicle-in-store", response_model=VehicleInStoreRecordPage)
+async def get_vehicle_in_store(
+    id_search: str = Query(default="", alias="id"),
+    chassis_number: str = Query(default=""),
+    seller_name: str = Query(default=""),
+    location: str = Query(default=""),
+    sort_by: str = Query(default="id"),
+    sort_dir: str = Query(default="asc"),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db_session),
+) -> VehicleInStoreRecordPage:
+    return await vehicle_payment_service.get_vehicle_in_store_records(
+        db,
+        id_search=id_search,
+        chassis_number=chassis_number,
+        seller_name=seller_name,
+        location=location,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
         page=page,
         page_size=page_size,
     )
