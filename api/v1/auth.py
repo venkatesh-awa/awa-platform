@@ -10,14 +10,10 @@ the path for Azure B2C / UAE Pass tokens).
 
 from __future__ import annotations
 
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import get_db_session
-from core.access_tokens import decode_access_token
+from api.deps import get_current_local_user, get_db_session
 from core.logging import get_logger
 from models.user import User
 from schemas.auth import (
@@ -44,39 +40,9 @@ from services.exceptions import (
 logger = get_logger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-_bearer_scheme = HTTPBearer(auto_error=False)
-
 # Generic reset copy - identical whether or not the email exists, so the
 # endpoint can't be used to enumerate registered accounts.
 _RESET_SENT_MESSAGE = "If an account exists for that email, a reset link has been sent."
-
-
-async def get_current_local_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
-    db: AsyncSession = Depends(get_db_session),
-) -> User:
-    """Dependency: resolve the User from a locally-issued access token."""
-    unauthorized = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid or expired token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    if credentials is None or not credentials.credentials:
-        raise unauthorized
-
-    claims = decode_access_token(credentials.credentials)
-    if claims is None:
-        raise unauthorized
-
-    try:
-        user_id = uuid.UUID(claims.subject)
-    except ValueError as exc:
-        raise unauthorized from exc
-
-    user = await auth_service.get_user_by_id(db, user_id)
-    if user is None or not user.is_active:
-        raise unauthorized
-    return user
 
 
 @router.post("/signup", response_model=UserRead, status_code=status.HTTP_201_CREATED)

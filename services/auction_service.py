@@ -9,13 +9,16 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from models.auction import Auction
 from services.exceptions import AuctionNotFoundError, AuctionNotLiveError
 
 
 async def get_auction(db: AsyncSession, auction_id: uuid.UUID) -> Auction:
-    result = await db.execute(select(Auction).where(Auction.id == auction_id))
+    result = await db.execute(
+        select(Auction).where(Auction.id == auction_id).options(selectinload(Auction.vehicle))
+    )
     auction = result.scalar_one_or_none()
     if auction is None:
         raise AuctionNotFoundError(auction_id)

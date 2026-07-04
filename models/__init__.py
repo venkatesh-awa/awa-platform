@@ -7,6 +7,7 @@ from models.content import (
     HowItWorksStep,
     MenuItem,
     ValueAddedService,
+    VehicleListing,
 )
 from models.user import (
     EmailVerificationToken,
@@ -25,6 +26,7 @@ __all__ = [
     "HowItWorksStep",
     "MenuItem",
     "ValueAddedService",
+    "VehicleListing",
     "User",
     "RefreshToken",
     "PasswordResetToken",

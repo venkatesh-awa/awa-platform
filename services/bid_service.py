@@ -27,8 +27,8 @@ from core.database import session_scope
 from core.kafka import publish_event
 from core.logging import get_logger
 from core.redis import publish_bid_update, try_accept_bid
-from core.security import CurrentUser
 from models.auction import Auction, Bid
+from models.user import User
 from schemas.bid import BidAccepted, BidResult
 from services.auction_service import get_live_auction
 from services.exceptions import BidNotEligibleError, BidPublishError, MalformedBidEvent
@@ -69,19 +69,19 @@ def parse_bid_envelope(raw_value: bytes) -> dict:
     return data
 
 
-def validate_bid_eligibility(user: CurrentUser, amount: Decimal) -> None:  # noqa: ARG001
+def validate_bid_eligibility(user: User, amount: Decimal) -> None:  # noqa: ARG001
     """Fast pre-check before publishing to Kafka. Deliberately conservative:
     this is a UX-speed gate, not the source of truth for eligibility - the
     auction worker re-validates against committed state in decide_bid().
     Wire this up to the real deposit/buying-limit service in a later sprint.
     """
-    if not any(user.has_role(role) for role in REQUIRED_BID_ROLES):
+    if user.role not in REQUIRED_BID_ROLES:
         raise BidNotEligibleError(
             f"Only {' or '.join(REQUIRED_BID_ROLES)} roles may place bids (BRD R088)"
         )
 
 
-async def submit_bid(db: AsyncSession, auction_id: uuid.UUID, user: CurrentUser, amount: Decimal) -> BidAccepted:
+async def submit_bid(db: AsyncSession, auction_id: uuid.UUID, user: User, amount: Decimal) -> BidAccepted:
     """Validate and publish a bid. Returns immediately once the event is
     durably on the Kafka log - the actual accept/reject decision arrives
     later via WebSocket, produced by decide_bid() below."""
@@ -96,7 +96,9 @@ async def submit_bid(db: AsyncSession, auction_id: uuid.UUID, user: CurrentUser,
     envelope = {
         "bid_id": str(bid_id),
         "auction_id": str(auction_id),
-        "bidder_id": user.subject,
+        # user.id, not any external-IdP claim - Bid.bidder_id is a real FK
+        # into the local users table (models/auction.py).
+        "bidder_id": str(user.id),
         "amount": str(amount),
         "submitted_at": submitted_at.isoformat(),
     }
@@ -111,7 +113,7 @@ async def submit_bid(db: AsyncSession, auction_id: uuid.UUID, user: CurrentUser,
         logger.exception("bid_publish_failed", auction_id=str(auction_id), bid_id=str(bid_id))
         raise BidPublishError from exc
 
-    logger.info("bid_submitted", auction_id=str(auction_id), bid_id=str(bid_id), bidder_id=user.subject)
+    logger.info("bid_submitted", auction_id=str(auction_id), bid_id=str(bid_id), bidder_id=str(user.id))
 
     return BidAccepted(bid_id=bid_id, auction_id=auction_id, status="received", submitted_at=submitted_at)
 

@@ -57,7 +57,8 @@ services:
       test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
+      start_period: 60s
 
   kafka-topics-init:
     image: confluentinc/cp-kafka:7.7.0
@@ -120,6 +121,10 @@ services:
       migrate: { condition: service_completed_successfully }
       redis: { condition: service_healthy }
       kafka: { condition: service_healthy }
+    # This service uses the API image but does not run the HTTP server, so the
+    # Dockerfile's /livez healthcheck is only valid for `backend`.
+    healthcheck:
+      disable: true
 
 # The UI now lives in the sibling awa-platform-ui project. Run it separately
 # with `npm run dev` (proxies to this backend on :8000, see its

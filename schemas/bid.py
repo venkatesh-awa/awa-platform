@@ -44,11 +44,29 @@ class BidResult(BaseModel):
     decided_at: datetime
 
 
+class VehicleSummary(BaseModel):
+    """Minimal vehicle info needed alongside an auction (title/image/lot for
+    display) - not the full VehicleListing record, which also carries
+    content-admin fields (is_active, timestamps) irrelevant to bidders."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title_en: str
+    title_ar: str
+    image_url: str | None
+    lot_number: str | None
+    mileage: str | None
+    location_en: str | None
+    location_ar: str | None
+
+
 class AuctionRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     vehicle_id: uuid.UUID
+    vehicle: VehicleSummary
     status: str
     starting_price: Decimal
     reserve_price: Decimal | None

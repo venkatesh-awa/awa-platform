@@ -21,6 +21,9 @@ class MenuItemRead(BaseModel):
     id: uuid.UUID
     label: str
     url: str
+    icon_class: str | None = None
+    item_type: str = "link"
+    visibility: str = "all"
     opens_new_tab: bool
     children: list[MenuItemRead] = []
 
@@ -35,14 +38,35 @@ class AuctionCategoryRead(BaseModel):
     link_url: str
 
 
-class FeaturedAuctionRead(BaseModel):
+class FeaturedAuctionTabRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    category_key: str
+    category_label: str
+    visibility: str = "all"
+    sort_order: int = 0
+
+
+class FeaturedAuctionItemRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     auction_id: uuid.UUID | None
+    vehicle_listing_id: uuid.UUID | None = None
     title: str
     image_url: str | None
     badge: str | None
+    category_key: str
+    category_label: str
+    visibility: str = "all"
+    detail_url: str | None = None
+    lot_number: str | None = None
+    mileage: str | None = None
+    location: str | None = None
+    bid_amount: str | None = None
+    countdown_label: str | None = None
+    category_sort_order: int = 0
     status: str | None = None
     starting_price: Decimal | None = None
 
@@ -91,6 +115,6 @@ class FooterRead(BaseModel):
 
 class HomeContentRead(BaseModel):
     auction_categories: list[AuctionCategoryRead]
-    featured_auctions: list[FeaturedAuctionRead]
+    featured_auctions: list[FeaturedAuctionTabRead]
     how_it_works: list[HowItWorksStepRead]
     value_added_services: list[ValueAddedServiceRead]

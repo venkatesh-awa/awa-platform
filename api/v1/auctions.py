@@ -13,8 +13,9 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import CurrentUser, get_current_user, get_db_session
+from api.deps import get_current_local_user, get_db_session
 from models.auction import Auction
+from models.user import User
 from schemas.bid import AuctionRead, BidAccepted, BidCreate
 from services import auction_service, bid_service
 from services.exceptions import (
@@ -44,7 +45,7 @@ async def get_auction(auction_id: uuid.UUID, db: AsyncSession = Depends(get_db_s
 async def submit_bid(
     auction_id: uuid.UUID,
     payload: BidCreate,
-    user: CurrentUser = Depends(get_current_user),
+    user: User = Depends(get_current_local_user),
     db: AsyncSession = Depends(get_db_session),
 ) -> BidAccepted:
     try:

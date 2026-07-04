@@ -11,12 +11,45 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Unicode, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
 from models.auction import Auction
+
+if TYPE_CHECKING:
+    from models.user import User
+
+
+class VehicleListing(Base):
+    __tablename__ = "vehicle_listings"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Nullable: existing/admin-curated listings (see 0006_vehicle_listings
+    # backfill) have no seller of record. SET NULL rather than CASCADE so
+    # deleting a seller's account doesn't also delete their vehicle listings
+    # and any auctions/bids built on top of them.
+    seller_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    title_en: Mapped[str] = mapped_column(Unicode(200), nullable=False)
+    title_ar: Mapped[str] = mapped_column(Unicode(200), nullable=False)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    detail_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    lot_number: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    mileage: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    location_en: Mapped[str | None] = mapped_column(Unicode(100), nullable=True)
+    location_ar: Mapped[str | None] = mapped_column(Unicode(100), nullable=True)
+    bid_amount: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    countdown_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+    auctions: Mapped[list[Auction]] = relationship(back_populates="vehicle")
+    seller: Mapped[User | None] = relationship(back_populates="vehicle_listings")
 
 
 class MenuItem(Base):
@@ -31,6 +64,9 @@ class MenuItem(Base):
     label_en: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     label_ar: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     url: Mapped[str] = mapped_column(String(500), nullable=False)
+    icon_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    item_type: Mapped[str] = mapped_column(String(30), nullable=False, default="link")
+    visibility: Mapped[str] = mapped_column(String(30), nullable=False, default="all")
     opens_new_tab: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -72,17 +108,23 @@ class FeaturedAuction(Base):
     auction_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("auctions.id", ondelete="SET NULL"), nullable=True
     )
-    title_en: Mapped[str] = mapped_column(Unicode(200), nullable=False)
-    title_ar: Mapped[str] = mapped_column(Unicode(200), nullable=False)
-    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    vehicle_listing_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("vehicle_listings.id", ondelete="SET NULL"), nullable=True
+    )
     badge_en: Mapped[str | None] = mapped_column(Unicode(50), nullable=True)
     badge_ar: Mapped[str | None] = mapped_column(Unicode(50), nullable=True)
+    category_key: Mapped[str] = mapped_column(String(80), nullable=False, default="newly_listed")
+    category_label_en: Mapped[str] = mapped_column(Unicode(100), nullable=False, default="Newly Listed Vehicles")
+    category_label_ar: Mapped[str] = mapped_column(Unicode(100), nullable=False, default="مركبات مدرجة حديثًا")
+    visibility: Mapped[str] = mapped_column(String(30), nullable=False, default="all")
+    category_sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
     auction: Mapped[Auction | None] = relationship()
+    vehicle_listing: Mapped[VehicleListing | None] = relationship()
 
 
 class HowItWorksStep(Base):

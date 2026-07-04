@@ -307,6 +307,6 @@ async def test_forgot_password_is_generic_for_unknown_email(
     assert "message" in response.json()
 
 
-async def test_me_requires_bearer_token(client: AsyncClient) -> None:
-    response = await client.get("/api/v1/auth/me")
+async def test_me_requires_bearer_token(unauthenticated_client: AsyncClient) -> None:
+    response = await unauthenticated_client.get("/api/v1/auth/me")
     assert response.status_code == 401

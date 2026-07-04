@@ -8,19 +8,34 @@ from unittest.mock import MagicMock
 from httpx import AsyncClient
 
 from models.auction import Auction
+from models.content import VehicleListing
 
 
 def _make_auction(status_: str = "live") -> Auction:
     now = datetime.now(UTC)
-    return Auction(
+    vehicle = VehicleListing(
         id=uuid.uuid4(),
-        vehicle_id=uuid.uuid4(),
+        title_en="Toyota Land Cruiser 2025",
+        title_ar="Toyota Land Cruiser 2025 AR",
+        image_url=None,
+        detail_url="/seller-buyer/vehicle-details/102684",
+        lot_number="102684",
+        mileage="100002 KM",
+        location_en="Abu Dhabi",
+        location_ar="Abu Dhabi AR",
+        is_active=True,
+    )
+    auction = Auction(
+        id=uuid.uuid4(),
+        vehicle_id=vehicle.id,
         status=status_,
         starting_price=Decimal("10000.00"),
         reserve_price=None,
         starts_at=now - timedelta(hours=1),
         ends_at=now + timedelta(hours=1),
     )
+    auction.vehicle = vehicle
+    return auction
 
 
 def _mock_scalar_result(value):

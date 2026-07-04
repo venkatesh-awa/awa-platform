@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
@@ -27,6 +28,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
+
+if TYPE_CHECKING:
+    from models.auction import Bid
+    from models.content import VehicleListing
 
 
 class User(Base):
@@ -63,6 +68,8 @@ class User(Base):
     email_verification_tokens: Mapped[list[EmailVerificationToken]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    bids: Mapped[list[Bid]] = relationship(back_populates="bidder")
+    vehicle_listings: Mapped[list[VehicleListing]] = relationship(back_populates="seller")
 
 
 class RefreshToken(Base):

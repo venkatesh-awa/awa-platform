@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock
 
@@ -17,9 +18,9 @@ os.environ.setdefault("AUTH_ISSUER", "https://test-issuer.example.com/")
 os.environ.setdefault("AUTH_AUDIENCE", "api://test")
 os.environ.setdefault("AUTH_JWKS_URL", "https://test-issuer.example.com/keys")
 
-from api.deps import get_current_user, get_db_session  # noqa: E402
-from core.security import CurrentUser  # noqa: E402
+from api.deps import get_current_local_user, get_db_session  # noqa: E402
 from main import create_app  # noqa: E402
+from models.user import User  # noqa: E402
 
 
 @pytest.fixture
@@ -35,22 +36,31 @@ def mock_db_session() -> MagicMock:
 
 
 @pytest.fixture
-def test_buyer() -> CurrentUser:
-    return CurrentUser(subject="buyer-123", roles=["Buyer"], raw_claims={"sub": "buyer-123"})
+def test_buyer() -> User:
+    return User(
+        id=uuid.uuid4(),
+        email="buyer@example.test",
+        password_hash="hashed",
+        first_name="Test",
+        last_name="Buyer",
+        role="Buyer",
+        is_active=True,
+        is_email_verified=True,
+    )
 
 
 @pytest.fixture
-def app_with_overrides(mock_db_session: MagicMock, test_buyer: CurrentUser):
+def app_with_overrides(mock_db_session: MagicMock, test_buyer: User):
     app = create_app()
 
     async def _override_db() -> AsyncGenerator[MagicMock, None]:
         yield mock_db_session
 
-    async def _override_user() -> CurrentUser:
+    async def _override_user() -> User:
         return test_buyer
 
     app.dependency_overrides[get_db_session] = _override_db
-    app.dependency_overrides[get_current_user] = _override_user
+    app.dependency_overrides[get_current_local_user] = _override_user
     yield app
     app.dependency_overrides.clear()
 
@@ -60,3 +70,19 @@ async def client(app_with_overrides) -> AsyncGenerator[AsyncClient, None]:
     transport = ASGITransport(app=app_with_overrides)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
+
+
+@pytest.fixture
+async def unauthenticated_client(mock_db_session: MagicMock) -> AsyncGenerator[AsyncClient, None]:
+    """Like `client`, but doesn't override get_current_local_user - for tests
+    that exercise real bearer-token enforcement (e.g. missing/invalid token)."""
+    app = create_app()
+
+    async def _override_db() -> AsyncGenerator[MagicMock, None]:
+        yield mock_db_session
+
+    app.dependency_overrides[get_db_session] = _override_db
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()

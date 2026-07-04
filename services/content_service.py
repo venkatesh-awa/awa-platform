@@ -23,10 +23,12 @@ from models.content import (
     HowItWorksStep,
     MenuItem,
     ValueAddedService,
+    VehicleListing,
 )
 from schemas.content import (
     AuctionCategoryRead,
-    FeaturedAuctionRead,
+    FeaturedAuctionItemRead,
+    FeaturedAuctionTabRead,
     FooterLinkRead,
     FooterRead,
     HowItWorksStepRead,
@@ -50,6 +52,9 @@ def _menu_item_to_schema(item: MenuItem, lang: Lang) -> MenuItemRead:
         id=item.id,
         label=_pick(item.label_en, item.label_ar, lang),
         url=item.url,
+        icon_class=item.icon_class,
+        item_type=item.item_type or "link",
+        visibility=item.visibility or "all",
         opens_new_tab=item.opens_new_tab,
         children=[_menu_item_to_schema(child, lang) for child in item.children if child.is_active],
     )
@@ -86,27 +91,81 @@ async def get_auction_categories(db: AsyncSession, lang: Lang) -> list[AuctionCa
     ]
 
 
-async def get_featured_auctions(db: AsyncSession, lang: Lang) -> list[FeaturedAuctionRead]:
+async def get_featured_auction_tabs(db: AsyncSession, lang: Lang) -> list[FeaturedAuctionTabRead]:
     result = await db.execute(
         select(FeaturedAuction)
         .where(FeaturedAuction.is_active)
-        .options(selectinload(FeaturedAuction.auction))
-        .order_by(FeaturedAuction.sort_order)
+        .order_by(FeaturedAuction.category_sort_order, FeaturedAuction.sort_order)
     )
-    schemas: list[FeaturedAuctionRead] = []
+    tabs_by_key: dict[str, FeaturedAuctionTabRead] = {}
     for row in result.scalars().all():
-        auction: Auction | None = row.auction
-        schemas.append(
-            FeaturedAuctionRead(
-                id=row.id,
-                auction_id=row.auction_id,
-                title=_pick(row.title_en, row.title_ar, lang),
-                image_url=row.image_url,
-                badge=_pick(row.badge_en, row.badge_ar, lang) or None,
-                status=auction.status if auction else None,
-                starting_price=auction.starting_price if auction else None,
-            )
+        category_key = row.category_key or "newly_listed"
+        if category_key in tabs_by_key:
+            continue
+        tabs_by_key[category_key] = FeaturedAuctionTabRead(
+            id=row.id,
+            category_key=category_key,
+            category_label=_pick(row.category_label_en, row.category_label_ar, lang),
+            visibility=row.visibility or "all",
+            sort_order=row.category_sort_order or 0,
         )
+    return list(tabs_by_key.values())
+
+
+def _featured_auction_item_to_schema(row: FeaturedAuction, lang: Lang) -> FeaturedAuctionItemRead | None:
+    vehicle: VehicleListing | None = row.vehicle_listing
+    if vehicle is None:
+        return None
+
+    auction: Auction | None = row.auction
+    # auction_id and vehicle_listing_id are independent nullable links (see
+    # models/content.py docstring), so a stale edit could point them at two
+    # different vehicles. Only surface live auction data when they agree.
+    if auction is not None and auction.vehicle_id != row.vehicle_listing_id:
+        auction = None
+    return FeaturedAuctionItemRead(
+        id=row.id,
+        auction_id=row.auction_id,
+        vehicle_listing_id=row.vehicle_listing_id,
+        title=_pick(vehicle.title_en, vehicle.title_ar, lang),
+        image_url=vehicle.image_url,
+        badge=_pick(row.badge_en, row.badge_ar, lang) or None,
+        category_key=row.category_key or "newly_listed",
+        category_label=_pick(row.category_label_en, row.category_label_ar, lang),
+        visibility=row.visibility or "all",
+        detail_url=vehicle.detail_url,
+        lot_number=vehicle.lot_number,
+        mileage=vehicle.mileage,
+        location=_pick(vehicle.location_en, vehicle.location_ar, lang) or None,
+        bid_amount=vehicle.bid_amount,
+        countdown_label=vehicle.countdown_label,
+        category_sort_order=row.category_sort_order or 0,
+        status=auction.status if auction else None,
+        starting_price=auction.starting_price if auction else None,
+    )
+
+
+async def get_featured_auction_items(
+    db: AsyncSession, lang: Lang, category_key: str
+) -> list[FeaturedAuctionItemRead]:
+    result = await db.execute(
+        select(FeaturedAuction)
+        .where(
+            FeaturedAuction.is_active,
+            FeaturedAuction.category_key == category_key,
+            FeaturedAuction.vehicle_listing_id.is_not(None),
+        )
+        .options(selectinload(FeaturedAuction.auction), selectinload(FeaturedAuction.vehicle_listing))
+        .order_by(FeaturedAuction.sort_order, FeaturedAuction.created_at)
+    )
+    schemas: list[FeaturedAuctionItemRead] = []
+    for row in result.scalars().all():
+        vehicle: VehicleListing | None = row.vehicle_listing
+        if vehicle is None or not vehicle.is_active:
+            continue
+        item = _featured_auction_item_to_schema(row, lang)
+        if item is not None:
+            schemas.append(item)
     return schemas
 
 

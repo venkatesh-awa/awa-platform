@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db_session
-from schemas.content import FooterRead, HomeContentRead, MenuItemRead
+from schemas.content import FeaturedAuctionItemRead, FooterRead, HomeContentRead, MenuItemRead
 from services import content_service
 
 router = APIRouter(prefix="/content", tags=["content"])
@@ -46,7 +46,16 @@ async def get_home(
 ) -> HomeContentRead:
     return HomeContentRead(
         auction_categories=await content_service.get_auction_categories(db, lang),
-        featured_auctions=await content_service.get_featured_auctions(db, lang),
+        featured_auctions=await content_service.get_featured_auction_tabs(db, lang),
         how_it_works=await content_service.get_how_it_works(db, lang),
         value_added_services=await content_service.get_value_added_services(db, lang),
     )
+
+
+@router.get("/featured-auctions/{category_key}/items", response_model=list[FeaturedAuctionItemRead])
+async def get_featured_auction_items(
+    category_key: str,
+    lang: LangQuery = Query(default="en"),
+    db: AsyncSession = Depends(get_db_session),
+) -> list[FeaturedAuctionItemRead]:
+    return await content_service.get_featured_auction_items(db, lang, category_key)
