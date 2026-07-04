@@ -1,3 +1,4 @@
+from models.admin import AdminDashboardCard, AdminNavItem
 from models.auction import Auction, Bid
 from models.content import (
     AuctionCategory,
@@ -17,6 +18,8 @@ from models.user import (
 )
 
 __all__ = [
+    "AdminDashboardCard",
+    "AdminNavItem",
     "Auction",
     "Bid",
     "AuctionCategory",
