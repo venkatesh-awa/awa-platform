@@ -41,6 +41,30 @@ class AdminNavItem(Base):
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
 
+class VehicleStatusMetric(Base):
+    """One status tile/label shown on the vehicle dashboards (e.g. "In Yard",
+    "Approved", "Pending Buyer Payment"). `group_key` groups tiles by which
+    dashboard widget they belong to (e.g. "realtime", "mtd",
+    "payment_summary"); `stat_key` is the machine key the frontend uses to
+    match this label against the live count returned by the reporting
+    endpoint (e.g. "in_yard_count")."""
+
+    __tablename__ = "vehicle_status_metrics"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    stat_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    label_en: Mapped[str] = mapped_column(Unicode(150), nullable=False)
+    label_ar: Mapped[str] = mapped_column(Unicode(150), nullable=False)
+    icon_class: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    color_class: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+
 class AdminDashboardCard(Base):
     """One action tile within a sidebar section's landing grid. `section_key`
     groups cards by which sidebar item they belong to (e.g. "sellers",

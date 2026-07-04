@@ -1,4 +1,4 @@
-from models.admin import AdminDashboardCard, AdminNavItem
+from models.admin import AdminDashboardCard, AdminNavItem, VehicleStatusMetric
 from models.auction import Auction, Bid
 from models.content import (
     AuctionCategory,
@@ -16,10 +16,12 @@ from models.user import (
     RefreshToken,
     User,
 )
+from models.vehicle_payment import VehiclePaymentRecord
 
 __all__ = [
     "AdminDashboardCard",
     "AdminNavItem",
+    "VehicleStatusMetric",
     "Auction",
     "Bid",
     "AuctionCategory",
@@ -30,6 +32,7 @@ __all__ = [
     "MenuItem",
     "ValueAddedService",
     "VehicleListing",
+    "VehiclePaymentRecord",
     "User",
     "RefreshToken",
     "PasswordResetToken",

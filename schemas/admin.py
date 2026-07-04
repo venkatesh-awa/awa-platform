@@ -30,3 +30,16 @@ class AdminDashboardCardRead(BaseModel):
     url: str
     image_url: str | None
     sort_order: int = 0
+
+
+class VehicleStatusMetricRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    group_key: str
+    stat_key: str
+    label: str
+    icon_class: str | None
+    image_url: str | None
+    color_class: str | None
+    sort_order: int = 0

@@ -1,0 +1,579 @@
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<link href="/PA_AdminDashboard/resource/css/fixedColumns.dataTables.css" rel="stylesheet">
+<link href="/PA_AdminDashboard/resource/css/dataTables.dataTables.css" rel="stylesheet">
+<link href="/PA_AdminDashboard/resource/css/flatpickr.min.css" rel="stylesheet">
+
+<div class="container mt-2">
+
+	<div class="row mb-3 align-items-end">
+		<div class="col-md-10 mb-3 mb-md-0">
+			<div class="form-floating">
+				<select id="custom-dropdown-reporttype" class="form-select" tabindex="3">
+					<option value="Vehicles-Real-Time-Status" selected>Vehicles Real-Time Status</option>
+					<option value="vehicle-payment-status">Vehicle Pending for Payment (Buyer)</option>
+				</select>
+				<label for="custom-dropdown-reporttype" data-i18n="dashboard_label">Dashboard<span class="text-danger">*</span></label>
+			</div>
+		</div>
+		<div class="col-md-2">
+			<button class="btn btn-success w-100" onclick="refreshbtn()" data-i18n="view_dashboard">View Dashboard</button>
+		</div>
+		<div class="col-auto ms-auto">
+			<div class="btn-group" role="group" aria-label="Language">
+				<button type="button" class="btn btn-outline-secondary" onclick="setLang('en')">EN</button>
+				<button type="button" class="btn btn-outline-secondary" onclick="setLang('ar')">AR</button>
+			</div>
+		</div>
+	</div>
+
+	<div class="d-flex justify-content-between align-items-center bg-light border rounded p-3 mb-3">
+		<div class="d-flex align-items-center gap-2">
+			<span class="badge rounded-pill bg-success">&nbsp;</span>
+			<strong data-i18n="realtime_status_title">Real-Time Vehicle Status</strong>
+		</div>
+		<button class="btn btn-success" onclick="refreshbtn()" data-i18n="refresh">Refresh</button>
+	</div>
+
+	<div class="real-time-status">
+		<div class="bg-white p-4 shadow rounded mb-4">
+			<div class="row g-3 mb-4">
+				<div class="col-md-4">
+					<div class="form-floating mb-4">
+						<input type="text" class="form-control flatpickr-input" id="startDate" placeholder="Start Date" tabindex="1" readonly>
+						<label for="startDate" data-i18n="start_date">Start Date<span class="text-danger">*</span></label>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="form-floating mb-4">
+						<input type="text" class="form-control flatpickr-input" id="endDate" placeholder="End Date" tabindex="2" readonly>
+						<label for="endDate" data-i18n="end_date">End Date<span class="text-danger">*</span></label>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="d-flex flex-wrap gap-2">
+					<button class="btn btn-success" onclick="refreshbtn()" data-i18n="show">Show</button>
+				</div>
+			</div>
+		</div>
+
+		<div id="realtimeTiles" class="row g-3 mb-4"></div>
+
+		<div class="row g-4 mt-1">
+			<div class="col-md-7">
+				<div class="card border-0 p-4">
+					<h6 data-i18n="chart_title">Vehicle Distribution by stage (with percentages)</h6>
+					<div class="mx-auto" style="max-width:300px;">
+						<canvas id="vehicleChart" width="300" height="300"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-5">
+				<div class="card border-0 p-4">
+					<div id="mtdTiles" class="row g-3"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="buyer-payment-status d-none">
+
+		<div id="paymentSummaryTiles" class="row g-3"></div>
+
+		<div class="mt-5 row">
+			<div class="col-md-3">
+				<div class="form-floating mb-3">
+					<input type="text" class="form-control" placeholder="Id" id="lot_id">
+					<label for="lot_id" data-i18n="lot_no">Lot No</label>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="form-floating mb-3">
+					<input type="text" class="form-control" placeholder="Chassis no" id="chassis_no">
+					<label for="chassis_no" data-i18n="chassis_number">Chassis Number</label>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="form-floating mb-3">
+					<input type="text" class="form-control" placeholder="Buyer Name" id="buyer_name">
+					<label for="buyer_name" data-i18n="buyer_name">Buyer Name</label>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="form-floating mb-3">
+					<input type="text" class="form-control" placeholder="Seller Name" id="seller_name">
+					<label for="seller_name" data-i18n="seller_name">Seller Name</label>
+				</div>
+			</div>
+			<div class="row">
+				<div class="d-flex flex-wrap gap-2">
+					<button class="btn btn-success" onclick="vehicle_pending_payment('ALL',1)" data-i18n="search">Search</button>
+					<button class="btn btn-dark" onclick="vehicle_pending_payment_clear()" data-i18n="clear">Clear</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="table-responsive">
+			<table id="example" class="table table-striped table-bordered w-100">
+				<thead></thead>
+				<tbody></tbody>
+			</table>
+		</div>
+
+		<div class="d-flex mt-4 justify-content-between align-items-center">
+			<nav aria-label="Page navigation">
+				<ul class="pagination"></ul>
+			</nav>
+			<span data-i18n="rows_per_page">Rows per page
+				<input type="number" class="form-control d-inline-block w-auto" id="page_size" onchange="vehicle_pending_payment('ALL',1)" value="50">
+			</span>
+		</div>
+	</div>
+</div>
+
+<script src="/PA_AdminDashboard/resource/js/chart.js"></script>
+<script src="/PA_AdminDashboard/resource/js/dataTables.js"></script>
+<script src="/PA_AdminDashboard/resource/js/dataTables.fixedColumns.js"></script>
+<script src="/PA_AdminDashboard/resource/js/fixedColumns.dataTables.js"></script>
+<script src="/PA_AdminDashboard/resource/js/flatpickr.js"></script>
+
+<script>
+const API_BASE = (window.AWA_API_BASE || "/api/v1");
+const UAT_BASE_URL = (window.AWA_UAT_BASE_URL || "https://uat-alwataneya.et.ae");
+const accessToken = localStorage.getItem('userC');
+const contextPath = "/PA_AdminDashboard";
+
+let currentPage = 1;
+let totalPages = 1;
+let currentLang = localStorage.getItem('dashboardLang') || 'en';
+
+const I18N = {
+    en: {
+        dashboard_label: "Dashboard",
+        view_dashboard: "View Dashboard",
+        realtime_status_title: "Real-Time Vehicle Status",
+        refresh: "Refresh",
+        start_date: "Start Date",
+        end_date: "End Date",
+        show: "Show",
+        chart_title: "Vehicle Distribution by stage (with percentages)",
+        lot_no: "Lot No",
+        chassis_number: "Chassis Number",
+        buyer_name: "Buyer Name",
+        seller_name: "Seller Name",
+        search: "Search",
+        clear: "Clear",
+        rows_per_page: "Rows per page",
+        previous: "Previous",
+        next: "Next",
+        headers: ["Lot No", "Chassis Number", "Title", "Year of Make", "Buyer Name", "Buyer Email",
+            "Seller Name", "Seller Email", "Payment Status", "Due Date", "Location", "Max Bid"]
+    },
+    ar: {
+        dashboard_label: "لوحة التحكم",
+        view_dashboard: "عرض لوحة التحكم",
+        realtime_status_title: "حالة المركبات في الوقت الفعلي",
+        refresh: "تحديث",
+        start_date: "تاريخ البدء",
+        end_date: "تاريخ الانتهاء",
+        show: "عرض",
+        chart_title: "توزيع المركبات حسب المرحلة (بالنسب المئوية)",
+        lot_no: "رقم القطعة",
+        chassis_number: "رقم الشاسيه",
+        buyer_name: "اسم المشتري",
+        seller_name: "اسم البائع",
+        search: "بحث",
+        clear: "مسح",
+        rows_per_page: "عدد الصفوف في الصفحة",
+        previous: "السابق",
+        next: "التالي",
+        headers: ["رقم القطعة", "رقم الشاسيه", "العنوان", "سنة الصنع", "اسم المشتري", "بريد المشتري",
+            "اسم البائع", "بريد البائع", "حالة الدفع", "تاريخ الاستحقاق", "الموقع", "أعلى مزايدة"]
+    }
+};
+
+const reportConfigs = {
+    'vehicle_payment_status': {
+        columnKeys: [
+            "lot_no", "chassis_number", "title", "year_of_make", "buyer_name", "buyer_email",
+            "seller_name", "seller_email", "payment_status", "payment_due_date", "location", "max_bid"
+        ]
+    }
+};
+
+function formatLocalDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return year + '-' + month + '-' + day;
+}
+
+function resolveImageUrl(url) {
+    if (!url) return "";
+    if (/^https?:\/\//i.test(url)) return url;
+    return UAT_BASE_URL.replace(/\/$/, "") + "/" + url.replace(/^\//, "");
+}
+
+function applyStaticTranslations() {
+    const dict = I18N[currentLang] || I18N.en;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key] === undefined) return;
+        const badge = el.querySelector('.text-danger');
+        el.textContent = dict[key];
+        if (badge) el.appendChild(badge);
+    });
+}
+
+function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('dashboardLang', lang);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    applyStaticTranslations();
+    refreshbtn();
+}
+
+function tileMarkup(metric) {
+    const iconHtml = metric.image_url
+        ? '<img src="' + resolveImageUrl(metric.image_url) + '" alt="' + metric.label + '">'
+        : '<i class="' + (metric.icon_class || '') + '"></i>';
+    const colorClass = metric.color_class || 'bg-secondary';
+    return '' +
+        '<div class="col-md-2 col-sm-6" data-stat-key="' + metric.stat_key + '">' +
+            '<div class="d-flex bg-white shadow rounded overflow-hidden">' +
+                '<div class="' + colorClass + ' text-white d-flex align-items-center justify-content-center px-3">' +
+                    iconHtml +
+                '</div>' +
+                '<div class="p-2">' +
+                    '<div class="text-muted small">' + metric.label + '</div>' +
+                    '<div class="fs-5 fw-bold text-danger js-stat-value" data-stat-key="' + metric.stat_key + '">0</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+}
+
+function mtdTileMarkup(metric) {
+    const iconHtml = metric.image_url
+        ? '<img src="' + resolveImageUrl(metric.image_url) + '" alt="' + metric.label + '">'
+        : '<i class="' + (metric.icon_class || '') + '"></i>';
+    const colorClass = metric.color_class ? ' ' + metric.color_class : '';
+    return '' +
+        '<div class="col-md-6" data-stat-key="' + metric.stat_key + '">' +
+            '<div class="border rounded p-3 d-flex justify-content-between align-items-center bg-light">' +
+                '<div class="d-flex align-items-center gap-2">' +
+                    '<div class="d-flex align-items-center justify-content-center rounded text-white' + colorClass + '" style="width:40px;height:40px;">' +
+                        iconHtml +
+                    '</div>' +
+                    '<div>' + metric.label + '</div>' +
+                '</div>' +
+                '<div class="fw-bold fs-5 js-stat-value" data-stat-key="' + metric.stat_key + '">0</div>' +
+            '</div>' +
+        '</div>';
+}
+
+function paymentSummaryTileMarkup(metric) {
+    const iconHtml = metric.image_url
+        ? '<img src="' + resolveImageUrl(metric.image_url) + '" alt="' + metric.label + '">'
+        : '<i class="' + (metric.icon_class || '') + '"></i>';
+    const colorClass = metric.color_class || 'bg-secondary';
+    return '' +
+        '<div class="col-md-3 col-sm-12" data-stat-key="' + metric.stat_key + '">' +
+            '<div class="d-flex bg-white shadow rounded overflow-hidden" style="cursor:pointer;" ' +
+                'onclick="vehicle_pending_payment(\'' + metric.label.replace(/'/g, "\\'") + '\',1)">' +
+                '<div class="' + colorClass + ' text-white d-flex align-items-center justify-content-center px-3">' +
+                    iconHtml +
+                '</div>' +
+                '<div class="p-2">' +
+                    '<div class="text-muted small">' + metric.label + '</div>' +
+                    '<div class="fs-5 fw-bold text-danger js-stat-value" data-stat-key="' + metric.stat_key + '">0</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>';
+}
+
+async function fetchStatusMetrics(group) {
+    const response = await fetch(API_BASE + '/admin/vehicle-status-metrics?group=' + group + '&lang=' + currentLang);
+    if (!response.ok) return [];
+    return response.json();
+}
+
+async function loadRealtimeTiles() {
+    const metrics = await fetchStatusMetrics('realtime');
+    document.getElementById('realtimeTiles').innerHTML = metrics.map(tileMarkup).join('');
+}
+
+async function loadMtdTiles() {
+    const metrics = await fetchStatusMetrics('mtd');
+    document.getElementById('mtdTiles').innerHTML = metrics.map(mtdTileMarkup).join('');
+}
+
+async function loadPaymentSummaryTiles() {
+    const metrics = await fetchStatusMetrics('payment_summary');
+    document.getElementById('paymentSummaryTiles').innerHTML = metrics.map(paymentSummaryTileMarkup).join('');
+}
+
+function setStatValues(record) {
+    document.querySelectorAll('.js-stat-value').forEach(el => {
+        const key = el.getAttribute('data-stat-key');
+        el.textContent = record?.[key] ?? 0;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.documentElement.lang = currentLang;
+    document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+    applyStaticTranslations();
+
+    const today = formatLocalDate(new Date());
+    document.getElementById("startDate").value = today;
+    document.getElementById("endDate").value = today;
+
+    flatpickr("#startDate", { dateFormat: "Y-m-d", allowInput: true, defaultDate: "today" });
+    flatpickr("#endDate", { dateFormat: "Y-m-d", allowInput: true, defaultDate: "today" });
+
+    loadRealtimeTiles();
+    loadMtdTiles();
+    loadPaymentSummaryTiles();
+    vehicle_real_time();
+    vehicle_pending_payment_count();
+});
+
+document.getElementById("custom-dropdown-reporttype").addEventListener("change", function () {
+    toggleReportView(this.value);
+});
+
+function toggleReportView(selectedValue) {
+    if (selectedValue === "Vehicles-Real-Time-Status") {
+        document.querySelector(".buyer-payment-status").classList.add("d-none");
+        document.querySelector(".real-time-status").classList.remove("d-none");
+        vehicle_real_time();
+    }
+    if (selectedValue === "vehicle-payment-status") {
+        document.querySelector(".buyer-payment-status").classList.remove("d-none");
+        document.querySelector(".real-time-status").classList.add("d-none");
+        vehicle_pending_payment("ALL", 1);
+        vehicle_pending_payment_count();
+    }
+}
+
+function refreshbtn() {
+    const selectedValue = document.getElementById("custom-dropdown-reporttype").value;
+    toggleReportView(selectedValue);
+}
+
+const chartInstances = {};
+
+function renderVehiclePieChart(canvasId, labels, dataValues) {
+    if (!labels?.length || !dataValues?.length) return;
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+    const total = dataValues.reduce((a, b) => parseInt(a) + parseInt(b), 0);
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{ data: dataValues, backgroundColor: ['#007bff', '#28a745', '#dc3545', '#231F20', '#ffc107'] }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            const value = ctx.raw;
+                            const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+                            return ctx.label + ": " + value + " (" + percent + "%)";
+                        }
+                    }
+                },
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        generateLabels: function (chart) {
+                            const dataset = chart.data.datasets[0];
+                            const total = dataset.data.reduce((a, b) => parseInt(a) + parseInt(b), 0);
+                            return chart.data.labels.map((label, i) => {
+                                const value = dataset.data[i];
+                                const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+                                return {
+                                    text: label + " (" + percent + "%)",
+                                    fillStyle: dataset.backgroundColor[i],
+                                    hidden: !chart.getDataVisibility(i),
+                                    index: i
+                                };
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function vehicle_real_time() {
+    const parameter = {
+        "start_date": document.getElementById("startDate")?.value?.trim(),
+        "end_date": document.getElementById("endDate")?.value?.trim()
+    };
+    fetch('p0/IZ7_19480I415H4AD06R2PIMOM2060=CZ6_M0K6G88241T9D06D3QT7G70GO7=NJVehicles-Real-Time-Status=/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'accessToken=' + encodeURIComponent(JSON.stringify(parameter))
+    }).then(response => response.json())
+    .then(data => {
+        const record = data?.response?.records?.[0];
+        if (!record) return;
+
+        setStatValues(record);
+
+        const labels = ['In Yard', 'Inspection', 'Washing', 'Auction', 'Pending'];
+        const dataValues = [record?.in_yard_count, record?.in_inspection_count, record?.in_washing_count, record?.in_live_auction_count, record?.in_seller_approved_count];
+        renderVehiclePieChart("vehicleChart", labels, dataValues);
+    }).catch(error => console.error("error ", error));
+}
+
+function vehicle_pending_payment(status, page = 1) {
+    const parameter = {
+        "status": status,
+        "language": currentLang,
+        "lot_no": document.getElementById("lot_id")?.value || "",
+        "chassis_number": document.getElementById("chassis_no")?.value || "",
+        "buyer_name": document.getElementById("buyer_name")?.value || "",
+        "seller_name": document.getElementById("seller_name")?.value || "",
+        "page": page,
+        "page_size": document.getElementById("page_size")?.value || 50
+    };
+
+    fetch('p0/IZ7_19480I415H4AD06R2PIMOM2060=CZ6_M0K6G88241T9D06D3QT7G70GO7=NJvehicle-payment-status=/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'accessToken=' + encodeURIComponent(JSON.stringify(parameter))
+    }).then(response => response.json())
+    .then(data => {
+        populateReportsVehicleManagementTable(data?.response, reportConfigs["vehicle_payment_status"].columnKeys);
+    }).catch(error => console.error("error ", error));
+}
+
+function vehicle_pending_payment_count() {
+    fetch('p0/IZ7_19480I415H4AD06R2PIMOM2060=CZ6_M0K6G88241T9D06D3QT7G70GO7=NJvehicle-payment-status-count=/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'accessToken=' + encodeURIComponent(accessToken)
+    }).then(response => response.json())
+    .then(data => {
+        const record = data?.response?.records?.[0];
+        if (record) setStatValues(record);
+    }).catch(error => console.error("error ", error));
+}
+
+function populateReportsVehicleManagementTable(data, columnKeys) {
+    const table = document.querySelector('#example');
+    if (!table || !Array.isArray(data?.records)) return;
+
+    if ($.fn.DataTable.isDataTable('#example')) {
+        $('#example').DataTable().clear().destroy();
+    }
+
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+
+    const headers = (I18N[currentLang] || I18N.en).headers;
+    const headerRow = document.createElement('tr');
+    headers.forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+
+    totalPages = data?.records?.[0]?.total_pages || 1;
+
+    data.records.forEach(item => {
+        const row = document.createElement('tr');
+        columnKeys.forEach(key => {
+            const td = document.createElement('td');
+            td.textContent = item[key] || '-';
+            row.appendChild(td);
+        });
+        tbody.appendChild(row);
+    });
+
+    setTimeout(function () {
+        const dt = new DataTable('#example', {
+            scrollX: true,
+            scrollY: "300px",
+            scrollCollapse: true,
+            paging: false,
+            fixedColumns: { start: 1 },
+            autoWidth: false
+        });
+        dt.columns.adjust().draw();
+    }, 120);
+
+    renderSlidingPaginationVehicleManagement(totalPages, currentPage, onPageChangeVehicleManagement);
+}
+
+function vehicle_pending_payment_clear() {
+    ["lot_id", "chassis_no", "buyer_name", "seller_name"].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = "";
+    });
+    vehicle_pending_payment("ALL", currentPage);
+}
+
+function renderSlidingPaginationVehicleManagement(totalPages, currentPage = 1, onPageChangeVehicleManagement) {
+    const paginationList = document.querySelector('.pagination');
+    if (!paginationList || totalPages < 1) return;
+
+    const dict = I18N[currentLang] || I18N.en;
+    paginationList.innerHTML = '';
+
+    const visiblePageCount = 5;
+    const startPage = Math.floor((currentPage - 1) / visiblePageCount) * visiblePageCount + 1;
+    const endPage = Math.min(startPage + visiblePageCount - 1, totalPages);
+
+    const prevLi = document.createElement('li');
+    prevLi.className = 'page-item' + (currentPage === 1 ? ' disabled' : '');
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'page-link';
+    prevBtn.textContent = dict.previous;
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => onPageChangeVehicleManagement(currentPage - 1));
+    prevLi.appendChild(prevBtn);
+    paginationList.appendChild(prevLi);
+
+    for (let i = startPage; i <= endPage; i++) {
+        const pageLi = document.createElement('li');
+        pageLi.className = 'page-item' + (i === currentPage ? ' active' : '');
+        const span = document.createElement('button');
+        span.className = 'page-link';
+        span.textContent = i;
+        span.addEventListener('click', () => onPageChangeVehicleManagement(i));
+        pageLi.appendChild(span);
+        paginationList.appendChild(pageLi);
+    }
+
+    const nextLi = document.createElement('li');
+    nextLi.className = 'page-item' + (currentPage === totalPages ? ' disabled' : '');
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'page-link';
+    nextBtn.textContent = dict.next;
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => onPageChangeVehicleManagement(currentPage + 1));
+    nextLi.appendChild(nextBtn);
+    paginationList.appendChild(nextLi);
+}
+
+function onPageChangeVehicleManagement(page) {
+    currentPage = page;
+    vehicle_pending_payment("ALL", currentPage);
+}
+</script>

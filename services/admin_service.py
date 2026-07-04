@@ -10,8 +10,8 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.admin import AdminDashboardCard, AdminNavItem
-from schemas.admin import AdminDashboardCardRead, AdminNavItemRead
+from models.admin import AdminDashboardCard, AdminNavItem, VehicleStatusMetric
+from schemas.admin import AdminDashboardCardRead, AdminNavItemRead, VehicleStatusMetricRead
 
 Lang = Literal["en", "ar"]
 
@@ -33,6 +33,29 @@ async def get_admin_nav(db: AsyncSession, lang: Lang) -> list[AdminNavItemRead]:
             label=_pick(row.label_en, row.label_ar, lang),
             icon_class=row.icon_class,
             url=row.url,
+            sort_order=row.sort_order,
+        )
+        for row in result.scalars().all()
+    ]
+
+
+async def get_vehicle_status_metrics(
+    db: AsyncSession, lang: Lang, group_key: str
+) -> list[VehicleStatusMetricRead]:
+    result = await db.execute(
+        select(VehicleStatusMetric)
+        .where(VehicleStatusMetric.is_active, VehicleStatusMetric.group_key == group_key)
+        .order_by(VehicleStatusMetric.sort_order)
+    )
+    return [
+        VehicleStatusMetricRead(
+            id=row.id,
+            group_key=row.group_key,
+            stat_key=row.stat_key,
+            label=_pick(row.label_en, row.label_ar, lang),
+            icon_class=row.icon_class,
+            image_url=row.image_url,
+            color_class=row.color_class,
             sort_order=row.sort_order,
         )
         for row in result.scalars().all()
