@@ -32,6 +32,7 @@ from core.database import Base
 if TYPE_CHECKING:
     from models.auction import Bid
     from models.content import VehicleListing
+    from models.role import Role, UserRole
 
 
 class User(Base):
@@ -43,8 +44,17 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     last_name: Mapped[str] = mapped_column(Unicode(100), nullable=False)
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    # App-level role claim embedded in issued access tokens (Buyer/Seller/Admin).
-    role: Mapped[str] = mapped_column(String(30), nullable=False, default="Buyer")
+    # The role embedded in issued access tokens and read by single-role checks
+    # (bid_service.REQUIRED_BID_ROLES, vehicle_intake_service's seller lookups).
+    # A real FK, not a free-text string - see models/role.py. `user_roles` below
+    # holds the full set of roles a user has; this is the one mirrored as
+    # "the" role for callers that only care about one. lazy="joined" so it's
+    # always populated alongside the user in a single query (no separate
+    # async lazy-load needed at every read site).
+    primary_role_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("roles.id", ondelete="NO ACTION"), nullable=False, index=True
+    )
+    primary_role: Mapped[Role] = relationship(foreign_keys=[primary_role_id], lazy="joined")
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -71,6 +81,9 @@ class User(Base):
     bids: Mapped[list[Bid]] = relationship(back_populates="bidder")
     vehicle_listings: Mapped[list[VehicleListing]] = relationship(
         back_populates="seller", foreign_keys="[VehicleListing.seller_id]"
+    )
+    user_roles: Mapped[list[UserRole]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
 

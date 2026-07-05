@@ -91,3 +91,23 @@ class DuplicateChassisNumberError(Exception):
     def __init__(self, chassis_number: str) -> None:
         self.chassis_number = chassis_number
         super().__init__(f"Chassis number already submitted: {chassis_number}")
+
+
+# --- Roles ---
+
+
+class RoleNotFoundError(Exception):
+    """A role name doesn't exist in the `roles` table."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+        super().__init__(f"Role not found: {name}")
+
+
+class LastRoleRemovalError(Exception):
+    """Refused to revoke a user's only remaining role - every user must keep
+    at least one role."""
+
+    def __init__(self, user_id: object) -> None:
+        self.user_id = user_id
+        super().__init__(f"Cannot remove the last role of user {user_id}")

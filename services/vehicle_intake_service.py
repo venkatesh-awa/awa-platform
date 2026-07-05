@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import get_settings
 from models.content import VehicleListing
+from models.role import Role
 from models.sub_seller import SubSeller
 from models.user import User
 from models.vehicle_intake import (
@@ -99,8 +100,12 @@ async def get_years(db: AsyncSession) -> list[int]:
 
 
 async def search_clients(db: AsyncSession, q: str) -> list[UserLookupRead]:
-    """Clients are sellers (users with role="Seller")."""
-    query = select(User).where(User.is_active, User.role == "Seller")
+    """Clients are sellers (users whose primary role is "Seller")."""
+    query = (
+        select(User)
+        .join(Role, User.primary_role_id == Role.id)
+        .where(User.is_active, Role.name == "Seller")
+    )
     if q:
         like = f"%{q}%"
         query = query.where(
@@ -230,13 +235,15 @@ async def _find_lookup_by_label(db: AsyncSession, model: type, label: str, *, ma
 
 
 async def _find_client_by_name(db: AsyncSession, name: str) -> User | None:
-    """Clients are sellers (users with role="Seller"), matched by full name
-    or email - mirrors search_clients' matching but expects an exact cell
-    value rather than a partial search-as-you-type query."""
+    """Clients are sellers (users whose primary role is "Seller"), matched by
+    full name or email - mirrors search_clients' matching but expects an
+    exact cell value rather than a partial search-as-you-type query."""
     result = await db.execute(
-        select(User).where(
+        select(User)
+        .join(Role, User.primary_role_id == Role.id)
+        .where(
             User.is_active,
-            User.role == "Seller",
+            Role.name == "Seller",
             or_(
                 func.lower(func.concat(User.first_name, " ", User.last_name)) == name.lower(),
                 func.lower(User.email) == name.lower(),

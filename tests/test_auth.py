@@ -23,6 +23,7 @@ from core.access_tokens import (
     hash_token,
 )
 from core.passwords import hash_password, verify_password
+from models.role import Role
 from models.user import PasswordResetToken, User
 from schemas.auth import SignUpRequest
 from services import auth_service
@@ -53,16 +54,18 @@ def _make_session() -> MagicMock:
 
 
 def _make_user(password: str = "Secret123", **overrides: object) -> User:
+    buyer_role = Role(id=uuid.uuid4(), name="Buyer")
     user = User(
         email=overrides.get("email", "jane@example.com"),
         password_hash=hash_password(password),
         first_name="Jane",
         last_name="Doe",
         phone=None,
-        role="Buyer",
+        primary_role_id=buyer_role.id,
         is_active=overrides.get("is_active", True),
         is_email_verified=False,
     )
+    user.primary_role = buyer_role
     user.id = uuid.uuid4()
     user.failed_login_attempts = overrides.get("failed_login_attempts", 0)
     user.locked_until = overrides.get("locked_until")
@@ -133,7 +136,13 @@ def test_opaque_token_hash_is_deterministic_and_hides_raw() -> None:
 
 async def test_sign_up_creates_user_and_verification_token() -> None:
     session = _make_session()
-    session.execute.return_value = _scalar_one_or_none(None)  # email not taken
+    buyer_role = Role(id=uuid.uuid4(), name="Buyer")
+    session.execute.side_effect = [
+        _scalar_one_or_none(None),  # email not taken
+        _scalar_one_or_none(buyer_role),  # sign_up's own get_role_by_name("Buyer")
+        _scalar_one_or_none(buyer_role),  # role_service.assign_role's get_role_by_name("Buyer")
+        _scalar_one_or_none(None),  # no existing user_roles row yet
+    ]
 
     added: list[object] = []
     session.add.side_effect = added.append

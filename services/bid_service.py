@@ -75,7 +75,7 @@ def validate_bid_eligibility(user: User, amount: Decimal) -> None:  # noqa: ARG0
     auction worker re-validates against committed state in decide_bid().
     Wire this up to the real deposit/buying-limit service in a later sprint.
     """
-    if user.role not in REQUIRED_BID_ROLES:
+    if user.primary_role.name not in REQUIRED_BID_ROLES:
         raise BidNotEligibleError(
             f"Only {' or '.join(REQUIRED_BID_ROLES)} roles may place bids (BRD R088)"
         )

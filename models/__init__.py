@@ -10,6 +10,7 @@ from models.content import (
     ValueAddedService,
     VehicleListing,
 )
+from models.role import Role, UserRole
 from models.sub_seller import SubSeller
 from models.user import (
     EmailVerificationToken,
@@ -52,6 +53,8 @@ __all__ = [
     "VehicleKeyOption",
     "FuelType",
     "BiddingModel",
+    "Role",
+    "UserRole",
     "SubSeller",
     "User",
     "RefreshToken",

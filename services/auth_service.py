@@ -38,6 +38,7 @@ from models.user import (
     User,
 )
 from schemas.auth import SignUpRequest, TokenPair
+from services import role_service
 from services.exceptions import (
     AccountInactiveError,
     AccountLockedError,
@@ -80,19 +81,22 @@ async def sign_up(db: AsyncSession, data: SignUpRequest) -> SignUpResult:
     if await _get_user_by_email(db, email) is not None:
         raise EmailAlreadyRegisteredError(email)
 
+    buyer_role = await role_service.get_role_by_name(db, "Buyer")
     user = User(
         email=email,
         password_hash=hash_password(data.password),
         first_name=data.first_name.strip(),
         last_name=data.last_name.strip(),
         phone=data.phone.strip() if data.phone else None,
-        role="Buyer",
+        primary_role_id=buyer_role.id,
         is_active=True,
         is_email_verified=False,
     )
+    user.primary_role = buyer_role  # avoid a lazy-load if read back before a refresh
     db.add(user)
-    await db.flush()  # populate user.id before creating the child token row
+    await db.flush()  # populate user.id before creating the child token row/role row
 
+    await role_service.assign_role(db, user, "Buyer", is_primary=True)
     raw_token, _ = await _issue_email_verification(db, user)
 
     await db.commit()
@@ -239,7 +243,7 @@ async def verify_email(db: AsyncSession, raw_token: str) -> None:
 
 async def _issue_token_pair(db: AsyncSession, user: User) -> TokenPair:
     settings = get_settings()
-    access_token, expires_in = create_access_token(user.id, [user.role])
+    access_token, expires_in = create_access_token(user.id, [user.primary_role.name])
 
     raw_refresh = generate_opaque_token()
     db.add(

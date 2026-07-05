@@ -20,6 +20,7 @@ os.environ.setdefault("AUTH_JWKS_URL", "https://test-issuer.example.com/keys")
 
 from api.deps import get_current_local_user, get_db_session  # noqa: E402
 from main import create_app  # noqa: E402
+from models.role import Role  # noqa: E402
 from models.user import User  # noqa: E402
 
 
@@ -37,16 +38,19 @@ def mock_db_session() -> MagicMock:
 
 @pytest.fixture
 def test_buyer() -> User:
-    return User(
+    buyer_role = Role(id=uuid.uuid4(), name="Buyer")
+    user = User(
         id=uuid.uuid4(),
         email="buyer@example.test",
         password_hash="hashed",
         first_name="Test",
         last_name="Buyer",
-        role="Buyer",
+        primary_role_id=buyer_role.id,
         is_active=True,
         is_email_verified=True,
     )
+    user.primary_role = buyer_role
+    return user
 
 
 @pytest.fixture
