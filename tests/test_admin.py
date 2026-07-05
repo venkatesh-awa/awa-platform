@@ -171,6 +171,37 @@ async def test_get_admin_dashboard_cards_management_section_allows_manager(
     assert response.status_code == 200
 
 
+def _mock_scalar_result(value: int) -> MagicMock:
+    result = MagicMock()
+    result.scalar_one.return_value = value
+    return result
+
+
+async def test_get_admin_user_counts_returns_all_four_buckets(
+    staff_client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    # Service issues four count queries in order: total, sellers, buyers, staff.
+    mock_db_session.execute.side_effect = [
+        _mock_scalar_result(120),
+        _mock_scalar_result(40),
+        _mock_scalar_result(70),
+        _mock_scalar_result(10),
+    ]
+
+    response = await staff_client.get("/api/v1/admin/user-counts")
+
+    assert response.status_code == 200
+    assert response.json() == {"total": 120, "sellers": 40, "buyers": 70, "staff": 10}
+
+
+async def test_get_admin_user_counts_requires_staff_role(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await client.get("/api/v1/admin/user-counts")
+
+    assert response.status_code == 403
+
+
 def _vehicle_status_metric(
     stat_key: str, label_en: str, label_ar: str, group_key: str = "realtime"
 ) -> VehicleStatusMetric:

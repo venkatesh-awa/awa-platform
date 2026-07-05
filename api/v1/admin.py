@@ -18,7 +18,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.deps import get_db_session, require_local_role
 from core.roles import SECTION_ROLE_REQUIREMENTS, STAFF_ROLES
 from models.user import User
-from schemas.admin import AdminDashboardCardRead, AdminNavItemRead, VehicleStatusMetricRead
+from schemas.admin import (
+    AdminDashboardCardRead,
+    AdminNavItemRead,
+    AdminUserCountsRead,
+    VehicleStatusMetricRead,
+)
 from schemas.vehicle_payment import (
     VehicleInStoreRecordPage,
     VehiclePaymentRecordPage,
@@ -79,6 +84,14 @@ async def get_admin_dashboard_cards(
 ) -> list[AdminDashboardCardRead]:
     await _ensure_section_access(user, db, section)
     return await admin_service.get_admin_dashboard_cards(db, lang, section)
+
+
+@router.get("/user-counts", response_model=AdminUserCountsRead)
+async def get_admin_user_counts(
+    db: AsyncSession = Depends(get_db_session),
+    _user: User = Depends(_require_staff),
+) -> AdminUserCountsRead:
+    return await admin_service.get_admin_user_counts(db)
 
 
 @router.get("/vehicle-status-metrics", response_model=list[VehicleStatusMetricRead])

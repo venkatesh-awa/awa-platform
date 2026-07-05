@@ -1,17 +1,27 @@
 """Read operations for the admin dashboard chrome (sidebar nav + per-section
-card grids). Public/unauthenticated by design, matching services/content_service.py -
-this only exposes navigation labels and icons, no seller/user data.
+card grids), plus the overview user headcounts. The chrome reads are
+public/unauthenticated by design, matching services/content_service.py - they
+only expose navigation labels and icons. get_admin_user_counts does aggregate
+over the users table, so its route must stay staff-gated (api/v1/admin.py).
 """
 
 from __future__ import annotations
 
 from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import distinct, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.roles import STAFF_ROLES
 from models.admin import AdminDashboardCard, AdminNavItem, VehicleStatusMetric
-from schemas.admin import AdminDashboardCardRead, AdminNavItemRead, VehicleStatusMetricRead
+from models.role import Role, UserRole
+from models.user import User
+from schemas.admin import (
+    AdminDashboardCardRead,
+    AdminNavItemRead,
+    AdminUserCountsRead,
+    VehicleStatusMetricRead,
+)
 
 Lang = Literal["en", "ar"]
 
@@ -37,6 +47,27 @@ async def get_admin_nav(db: AsyncSession, lang: Lang) -> list[AdminNavItemRead]:
         )
         for row in result.scalars().all()
     ]
+
+
+async def _count_users_with_roles(db: AsyncSession, role_names: tuple[str, ...]) -> int:
+    """Distinct users holding any of `role_names` via user_roles - distinct
+    because a user can hold several of them (e.g. Admin + Accountant)."""
+    result = await db.execute(
+        select(func.count(distinct(UserRole.user_id)))
+        .join(Role, UserRole.role_id == Role.id)
+        .where(Role.name.in_(role_names))
+    )
+    return int(result.scalar_one())
+
+
+async def get_admin_user_counts(db: AsyncSession) -> AdminUserCountsRead:
+    total_result = await db.execute(select(func.count()).select_from(User))
+    return AdminUserCountsRead(
+        total=int(total_result.scalar_one()),
+        sellers=await _count_users_with_roles(db, ("Seller",)),
+        buyers=await _count_users_with_roles(db, ("Buyer",)),
+        staff=await _count_users_with_roles(db, STAFF_ROLES),
+    )
 
 
 async def get_vehicle_status_metrics(

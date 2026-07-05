@@ -32,6 +32,18 @@ class AdminDashboardCardRead(BaseModel):
     sort_order: int = 0
 
 
+class AdminUserCountsRead(BaseModel):
+    """Headcounts for the admin overview cards. `total` is every user on the
+    platform; the rest are distinct users holding that role via `user_roles`
+    (multi-role users are counted once per bucket, so buckets can overlap and
+    won't sum to `total`)."""
+
+    total: int
+    sellers: int
+    buyers: int
+    staff: int
+
+
 class VehicleStatusMetricRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
