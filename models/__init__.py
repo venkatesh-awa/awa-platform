@@ -16,6 +16,16 @@ from models.user import (
     RefreshToken,
     User,
 )
+from models.vehicle_intake import (
+    BiddingModel,
+    FuelType,
+    VehicleBranch,
+    VehicleColor,
+    VehicleKeyOption,
+    VehicleMake,
+    VehicleModel,
+    VehicleYear,
+)
 from models.vehicle_payment import VehiclePaymentRecord
 
 __all__ = [
@@ -33,6 +43,14 @@ __all__ = [
     "ValueAddedService",
     "VehicleListing",
     "VehiclePaymentRecord",
+    "VehicleMake",
+    "VehicleModel",
+    "VehicleYear",
+    "VehicleBranch",
+    "VehicleColor",
+    "VehicleKeyOption",
+    "FuelType",
+    "BiddingModel",
     "User",
     "RefreshToken",
     "PasswordResetToken",

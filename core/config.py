@@ -75,6 +75,13 @@ class Settings(BaseSettings):
     # Base URL of the web app, used to build password-reset / verify links.
     frontend_base_url: str = "http://localhost:5173"
 
+    # --- File uploads (seller document intake, e.g. Mulkhiya) ---
+    # Local disk storage for now - no S3/Blob wired up in this service yet.
+    # /tmp is writable by the non-root container user (see Dockerfile's
+    # appuser, which doesn't own /app); mount a volume there for persistence.
+    upload_dir: str = "/tmp/uploads"
+    upload_base_url: str = "/static/uploads"
+
     # --- Observability ---
     otel_exporter_otlp_endpoint: str | None = None
     otel_service_name: str = "awa-backend"

@@ -45,6 +45,14 @@ class User(Base):
     phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
     # App-level role claim embedded in issued access tokens (Buyer/Seller/Admin).
     role: Mapped[str] = mapped_column(String(30), nullable=False, default="Buyer")
+    # Set only on sub-seller accounts, pointing at the seller (client) they act
+    # under - the "Add a New Car" form's Sub Seller field is scoped to
+    # whichever client is selected, not searchable independently.
+    # NO ACTION (not CASCADE/SET NULL): SQL Server rejects a self-referencing
+    # FK with a cascade path since a delete could cycle back to the same table.
+    parent_seller_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="NO ACTION"), nullable=True, index=True
+    )
 
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     is_email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -69,7 +77,10 @@ class User(Base):
         back_populates="user", cascade="all, delete-orphan"
     )
     bids: Mapped[list[Bid]] = relationship(back_populates="bidder")
-    vehicle_listings: Mapped[list[VehicleListing]] = relationship(back_populates="seller")
+    vehicle_listings: Mapped[list[VehicleListing]] = relationship(
+        back_populates="seller", foreign_keys="[VehicleListing.seller_id]"
+    )
+    parent_seller: Mapped[User | None] = relationship(remote_side=[id], foreign_keys=[parent_seller_id])
 
 
 class RefreshToken(Base):

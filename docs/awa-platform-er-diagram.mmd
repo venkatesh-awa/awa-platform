@@ -1,0 +1,184 @@
+erDiagram
+    USERS ||--o{ REFRESH_TOKENS : has
+    USERS ||--o{ PASSWORD_RESET_TOKENS : has
+    USERS ||--o{ EMAIL_VERIFICATION_TOKENS : has
+    USERS ||--o{ BIDS : places
+    USERS ||--o{ VEHICLE_LISTINGS : seller
+    USERS ||--o{ VEHICLE_LISTINGS : sub_seller
+    USERS ||--o{ VEHICLE_LISTINGS : created_by
+
+    VEHICLE_LISTINGS ||--o{ AUCTIONS : listed_in
+    AUCTIONS ||--o{ BIDS : receives
+
+    VEHICLE_MAKES ||--o{ VEHICLE_MODELS : has
+    VEHICLE_MAKES ||--o{ VEHICLE_LISTINGS : make
+    VEHICLE_MODELS ||--o{ VEHICLE_LISTINGS : model
+    VEHICLE_BRANCHES ||--o{ VEHICLE_LISTINGS : branch
+    VEHICLE_COLORS ||--o{ VEHICLE_LISTINGS : color
+    VEHICLE_KEY_OPTIONS ||--o{ VEHICLE_LISTINGS : keys
+    FUEL_TYPES ||--o{ VEHICLE_LISTINGS : fuel
+    BIDDING_MODELS ||--o{ VEHICLE_LISTINGS : bidding_model
+
+    AUCTIONS ||--o{ FEATURED_AUCTIONS : featured_ref
+    VEHICLE_LISTINGS ||--o{ FEATURED_AUCTIONS : vehicle_ref
+
+    MENU_ITEMS ||--o{ MENU_ITEMS : parent_child
+    ADMIN_NAV_ITEMS ||--o{ ADMIN_NAV_ITEMS : parent_child
+
+    USERS {
+        uuid id PK
+        string email
+        string role
+        boolean is_active
+        boolean is_email_verified
+    }
+
+    VEHICLE_LISTINGS {
+        uuid id PK
+        uuid seller_id FK
+        uuid sub_seller_id FK
+        uuid created_by_id FK
+        uuid make_id FK
+        uuid model_id FK
+        uuid branch_id FK
+        uuid color_id FK
+        uuid keys_option_id FK
+        uuid fuel_type_id FK
+        uuid bidding_model_id FK
+        string chassis_number
+        string lot_number
+        string status
+    }
+
+    AUCTIONS {
+        uuid id PK
+        uuid vehicle_id FK
+        string status
+        decimal starting_price
+        decimal reserve_price
+        datetime starts_at
+        datetime ends_at
+    }
+
+    BIDS {
+        uuid id PK
+        uuid auction_id FK
+        uuid bidder_id FK
+        decimal amount
+        string status
+        int kafka_partition
+        int kafka_offset
+    }
+
+    REFRESH_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash
+        datetime expires_at
+        datetime revoked_at
+    }
+
+    PASSWORD_RESET_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash
+        datetime expires_at
+        datetime used_at
+    }
+
+    EMAIL_VERIFICATION_TOKENS {
+        uuid id PK
+        uuid user_id FK
+        string token_hash
+        datetime expires_at
+        datetime used_at
+    }
+
+    VEHICLE_MAKES {
+        uuid id PK
+        string name_en
+        string name_ar
+    }
+
+    VEHICLE_MODELS {
+        uuid id PK
+        uuid make_id FK
+        string name_en
+        string name_ar
+    }
+
+    VEHICLE_BRANCHES {
+        uuid id PK
+        string name_en
+        string name_ar
+    }
+
+    VEHICLE_COLORS {
+        uuid id PK
+        string name_en
+        string name_ar
+    }
+
+    VEHICLE_KEY_OPTIONS {
+        uuid id PK
+        string name_en
+        string name_ar
+    }
+
+    FUEL_TYPES {
+        uuid id PK
+        string name_en
+        string name_ar
+    }
+
+    BIDDING_MODELS {
+        uuid id PK
+        string name_en
+        string name_ar
+    }
+
+    FEATURED_AUCTIONS {
+        uuid id PK
+        uuid auction_id FK
+        uuid vehicle_listing_id FK
+        string category_key
+        string visibility
+    }
+
+    MENU_ITEMS {
+        uuid id PK
+        uuid parent_id FK
+        string label_en
+        string url
+    }
+
+    ADMIN_NAV_ITEMS {
+        uuid id PK
+        uuid parent_id FK
+        string label_en
+        string url
+    }
+
+    ADMIN_DASHBOARD_CARDS {
+        uuid id PK
+        string section_key
+        string label_en
+        string url
+    }
+
+    VEHICLE_STATUS_METRICS {
+        uuid id PK
+        string group_key
+        string stat_key
+        string label_en
+    }
+
+    VEHICLE_PAYMENT_RECORDS {
+        uuid id PK
+        string lot_no
+        string chassis_number
+        string buyer_email
+        string seller_email
+        string payment_status
+        decimal max_bid
+    }

@@ -70,3 +70,24 @@ class AccountLockedError(Exception):
 class InvalidTokenError(Exception):
     """A refresh / password-reset / email-verification token is unknown, already
     used, revoked, or expired. Uniform for all cases so callers don't leak which."""
+
+
+# --- Vehicle intake ("Add a New Car" form) ---
+
+
+class VehicleLookupNotFoundError(Exception):
+    """A referenced lookup id (make/model/branch/color/etc.) or client/sub-seller
+    user id doesn't exist or isn't active."""
+
+    def __init__(self, field: str, value: object) -> None:
+        self.field = field
+        self.value = value
+        super().__init__(f"Invalid {field}: {value}")
+
+
+class DuplicateChassisNumberError(Exception):
+    """A vehicle submission with this chassis number already exists."""
+
+    def __init__(self, chassis_number: str) -> None:
+        self.chassis_number = chassis_number
+        super().__init__(f"Chassis number already submitted: {chassis_number}")

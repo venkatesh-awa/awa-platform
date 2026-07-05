@@ -10,10 +10,13 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from api.v1.router import api_router
@@ -85,6 +88,10 @@ def create_app() -> FastAPI:
 
     app.include_router(api_router, prefix=settings.api_v1_prefix)
     app.include_router(ws_router)
+
+    upload_path = Path(settings.upload_dir)
+    upload_path.mkdir(parents=True, exist_ok=True)
+    app.mount(settings.upload_base_url, StaticFiles(directory=upload_path), name="uploads")
 
     configure_tracing(app)
     Instrumentator().instrument(app).expose(app, endpoint=settings.prometheus_metrics_path)

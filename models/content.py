@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Unicode, Uuid, func
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Unicode, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
@@ -21,16 +22,35 @@ from models.auction import Auction
 
 if TYPE_CHECKING:
     from models.user import User
+    from models.vehicle_intake import (
+        BiddingModel,
+        FuelType,
+        VehicleBranch,
+        VehicleColor,
+        VehicleKeyOption,
+        VehicleMake,
+        VehicleModel,
+    )
 
 
 class VehicleListing(Base):
+    """A vehicle known to the platform - spans both publicly published
+    auction listings (the original use of this table) and seller intake
+    submissions from the "Add a New Car" form (`status` starts at
+    "submitted", `is_active` False, until reviewed and published). One table
+    rather than two so a submission becomes a listing in place instead of
+    needing a separate copy/migration step once approved.
+    """
+
     __tablename__ = "vehicle_listings"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     # Nullable: existing/admin-curated listings (see 0006_vehicle_listings
     # backfill) have no seller of record. SET NULL rather than CASCADE so
     # deleting a seller's account doesn't also delete their vehicle listings
-    # and any auctions/bids built on top of them.
+    # and any auctions/bids built on top of them. Doubles as the "Client"
+    # on a seller intake submission - there's no distinct concept of a
+    # submission's client vs. a listing's seller.
     seller_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -45,11 +65,66 @@ class VehicleListing(Base):
     bid_amount: Mapped[str | None] = mapped_column(String(50), nullable=True)
     countdown_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # --- Seller intake fields ("Add a New Car" form) - nullable since
+    # pre-existing/admin-curated listings never went through that form. ---
+    chassis_number: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, index=True)
+    make_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("vehicle_makes.id", ondelete="NO ACTION"), nullable=True
+    )
+    model_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("vehicle_models.id", ondelete="NO ACTION"), nullable=True
+    )
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("vehicle_branches.id", ondelete="NO ACTION"), nullable=True
+    )
+    color_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("vehicle_colors.id", ondelete="NO ACTION"), nullable=True
+    )
+    keys_option_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("vehicle_key_options.id", ondelete="NO ACTION"), nullable=True
+    )
+    fuel_type_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("fuel_types.id", ondelete="NO ACTION"), nullable=True
+    )
+    bidding_model_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("bidding_models.id", ondelete="SET NULL"), nullable=True
+    )
+    year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    target_selling_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    minimum_selling_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    previous_number_plate: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # A seller's own sub-account submitting on their behalf - distinct from
+    # `seller_id` (the client) and `created_by_id` (the admin operator).
+    # NO ACTION (not SET NULL): SQL Server rejects a second SET NULL cascade
+    # path into `users` alongside seller_id's existing one.
+    sub_seller_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
+    )
+    created_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
+    )
+    mulkhiya_document_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    terms_accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Intake review state ("submitted", "approved", "rejected", ...),
+    # distinct from `is_active` (whether it's shown as a public listing).
+    # Pre-existing rows are backfilled to "published" (see migration).
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="submitted")
+
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
 
     auctions: Mapped[list[Auction]] = relationship(back_populates="vehicle")
-    seller: Mapped[User | None] = relationship(back_populates="vehicle_listings")
+    seller: Mapped[User | None] = relationship(back_populates="vehicle_listings", foreign_keys=[seller_id])
+    sub_seller: Mapped[User | None] = relationship(foreign_keys=[sub_seller_id])
+    created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])
+    make: Mapped[VehicleMake | None] = relationship()
+    model: Mapped[VehicleModel | None] = relationship()
+    branch: Mapped[VehicleBranch | None] = relationship()
+    color: Mapped[VehicleColor | None] = relationship()
+    keys_option: Mapped[VehicleKeyOption | None] = relationship()
+    fuel_type: Mapped[FuelType | None] = relationship()
+    bidding_model: Mapped[BiddingModel | None] = relationship()
 
 
 class MenuItem(Base):

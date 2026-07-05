@@ -1,0 +1,196 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [6 0 R 8 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Length 5388 >>
+stream
+BT /F2 22 Tf 50.0 795.0 Td (AWA Platform ER Diagram) Tj ET
+BT /F1 10 Tf 50.0 773.0 Td (Generated from SQLAlchemy model metadata. Cardinalities shown as one-to-many where foreign keys exist.) Tj ET
+0.96 0.98 1 rg 50.0 580.0 210.0 145.0 re f
+0.12 0.20 0.30 RG 1.2 w 50.0 580.0 210.0 145.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 60.0 703.0 Td (USERS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 62.0 683.0 Td (PK id) Tj ET
+BT /F1 9 Tf 62.0 669.0 Td (email) Tj ET
+BT /F1 9 Tf 62.0 655.0 Td (role) Tj ET
+BT /F1 9 Tf 62.0 641.0 Td (is_active) Tj ET
+BT /F1 9 Tf 62.0 627.0 Td (is_email_verified) Tj ET
+0.96 0.98 1 rg 405.0 505.0 280.0 220.0 re f
+0.12 0.20 0.30 RG 1.2 w 405.0 505.0 280.0 220.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 415.0 703.0 Td (VEHICLE_LISTINGS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 417.0 683.0 Td (PK id) Tj ET
+BT /F1 9 Tf 417.0 669.0 Td (FK seller_id) Tj ET
+BT /F1 9 Tf 417.0 655.0 Td (FK make_id/model_id) Tj ET
+BT /F1 9 Tf 417.0 641.0 Td (FK branch/color/keys/fuel) Tj ET
+BT /F1 9 Tf 417.0 627.0 Td (FK bidding_model_id) Tj ET
+BT /F1 9 Tf 417.0 613.0 Td (chassis_number) Tj ET
+BT /F1 9 Tf 417.0 599.0 Td (lot_number) Tj ET
+BT /F1 9 Tf 417.0 585.0 Td (status) Tj ET
+0.96 0.98 1 rg 785.0 575.0 210.0 150.0 re f
+0.12 0.20 0.30 RG 1.2 w 785.0 575.0 210.0 150.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 795.0 703.0 Td (AUCTIONS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 797.0 683.0 Td (PK id) Tj ET
+BT /F1 9 Tf 797.0 669.0 Td (FK vehicle_id) Tj ET
+BT /F1 9 Tf 797.0 655.0 Td (status) Tj ET
+BT /F1 9 Tf 797.0 641.0 Td (starting_price) Tj ET
+BT /F1 9 Tf 797.0 627.0 Td (reserve_price) Tj ET
+BT /F1 9 Tf 797.0 613.0 Td (starts_at) Tj ET
+BT /F1 9 Tf 797.0 599.0 Td (ends_at) Tj ET
+0.96 0.98 1 rg 1030.0 575.0 120.0 150.0 re f
+0.12 0.20 0.30 RG 1.2 w 1030.0 575.0 120.0 150.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 1040.0 703.0 Td (BIDS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 1042.0 683.0 Td (PK id) Tj ET
+BT /F1 9 Tf 1042.0 669.0 Td (FK auction_id) Tj ET
+BT /F1 9 Tf 1042.0 655.0 Td (FK bidder_id) Tj ET
+BT /F1 9 Tf 1042.0 641.0 Td (amount) Tj ET
+BT /F1 9 Tf 1042.0 627.0 Td (status) Tj ET
+BT /F1 9 Tf 1042.0 613.0 Td (kafka_partition) Tj ET
+BT /F1 9 Tf 1042.0 599.0 Td (kafka_offset) Tj ET
+0.96 0.98 1 rg 785.0 350.0 255.0 145.0 re f
+0.12 0.20 0.30 RG 1.2 w 785.0 350.0 255.0 145.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 795.0 473.0 Td (FEATURED_AUCTIONS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 797.0 453.0 Td (PK id) Tj ET
+BT /F1 9 Tf 797.0 439.0 Td (FK auction_id) Tj ET
+BT /F1 9 Tf 797.0 425.0 Td (FK vehicle_listing_id) Tj ET
+BT /F1 9 Tf 797.0 411.0 Td (category_key) Tj ET
+BT /F1 9 Tf 797.0 397.0 Td (visibility) Tj ET
+0.96 0.98 1 rg 60.0 115.0 185.0 115.0 re f
+0.12 0.20 0.30 RG 1.2 w 60.0 115.0 185.0 115.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 70.0 208.0 Td (VEHICLE_MAKES) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 72.0 188.0 Td (PK id) Tj ET
+BT /F1 9 Tf 72.0 174.0 Td (name_en) Tj ET
+BT /F1 9 Tf 72.0 160.0 Td (name_ar) Tj ET
+0.96 0.98 1 rg 305.0 115.0 185.0 115.0 re f
+0.12 0.20 0.30 RG 1.2 w 305.0 115.0 185.0 115.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 315.0 208.0 Td (VEHICLE_MODELS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 317.0 188.0 Td (PK id) Tj ET
+BT /F1 9 Tf 317.0 174.0 Td (FK make_id) Tj ET
+BT /F1 9 Tf 317.0 160.0 Td (name_en) Tj ET
+BT /F1 9 Tf 317.0 146.0 Td (name_ar) Tj ET
+0.96 0.98 1 rg 545.0 95.0 250.0 150.0 re f
+0.12 0.20 0.30 RG 1.2 w 545.0 95.0 250.0 150.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 555.0 223.0 Td (LOOKUPS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 557.0 203.0 Td (vehicle_branches) Tj ET
+BT /F1 9 Tf 557.0 189.0 Td (vehicle_colors) Tj ET
+BT /F1 9 Tf 557.0 175.0 Td (vehicle_key_options) Tj ET
+BT /F1 9 Tf 557.0 161.0 Td (fuel_types) Tj ET
+BT /F1 9 Tf 557.0 147.0 Td (bidding_models) Tj ET
+0.96 0.98 1 rg 50.0 365.0 230.0 130.0 re f
+0.12 0.20 0.30 RG 1.2 w 50.0 365.0 230.0 130.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 60.0 473.0 Td (AUTH_TOKENS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 62.0 453.0 Td (refresh_tokens) Tj ET
+BT /F1 9 Tf 62.0 439.0 Td (password_reset_tokens) Tj ET
+BT /F1 9 Tf 62.0 425.0 Td (email_verification_tokens) Tj ET
+BT /F1 9 Tf 62.0 411.0 Td (all FK user_id) Tj ET
+0.96 0.98 1 rg 850.0 95.0 260.0 150.0 re f
+0.12 0.20 0.30 RG 1.2 w 850.0 95.0 260.0 150.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 860.0 223.0 Td (CONTENT_ADMIN) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 862.0 203.0 Td (menu_items self FK) Tj ET
+BT /F1 9 Tf 862.0 189.0 Td (admin_nav_items self FK) Tj ET
+BT /F1 9 Tf 862.0 175.0 Td (admin_dashboard_cards) Tj ET
+BT /F1 9 Tf 862.0 161.0 Td (vehicle_status_metrics) Tj ET
+0.96 0.98 1 rg 865.0 260.0 260.0 80.0 re f
+0.12 0.20 0.30 RG 1.2 w 865.0 260.0 260.0 80.0 re S
+0.10 0.16 0.24 rg
+BT /F2 12 Tf 875.0 318.0 Td (VEHICLE_PAYMENT_RECORDS) Tj ET
+0 0 0 rg
+BT /F1 9 Tf 877.0 298.0 Td (PK id) Tj ET
+BT /F1 9 Tf 877.0 284.0 Td (lot_no) Tj ET
+BT /F1 9 Tf 877.0 270.0 Td (chassis_number) Tj ET
+0.20 0.32 0.45 RG 1 w 260.0 652.5 m 405.0 615.0 l S
+0.20 0.32 0.45 RG 1 w 685.0 615.0 m 785.0 650.0 l S
+0.20 0.32 0.45 RG 1 w 995.0 650.0 m 1030.0 650.0 l S
+0.20 0.32 0.45 RG 1 w 260.0 622.5 m 1030.0 620.0 l S
+0.20 0.32 0.45 RG 1 w 155.0 580.0 m 165.0 495.0 l S
+0.20 0.32 0.45 RG 1 w 995.0 650.0 m 785.0 422.5 l S
+0.20 0.32 0.45 RG 1 w 685.0 615.0 m 785.0 422.5 l S
+0.20 0.32 0.45 RG 1 w 152.5 230.0 m 397.5 115.0 l S
+0.20 0.32 0.45 RG 1 w 397.5 230.0 m 545.0 505.0 l S
+0.20 0.32 0.45 RG 1 w 670.0 245.0 m 545.0 505.0 l S
+BT /F1 9 Tf 50.0 40.0 Td (Standalone content tables: auction_categories, footer_links, footer_settings, how_it_works_steps, value_added_services.) Tj ET
+
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1190 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 5 0 R >>
+endobj
+7 0 obj
+<< /Length 2564 >>
+stream
+BT /F2 20 Tf 50.0 795.0 Td (Relationship Summary) Tj ET
+BT /F1 11 Tf 65.0 755.0 Td (- USERS 1 -> many REFRESH_TOKENS / PASSWORD_RESET_TOKENS / EMAIL_VERIFICATION_TOKENS) Tj ET
+BT /F1 11 Tf 65.0 731.0 Td (- USERS 1 -> many BIDS \(bidder_id\)) Tj ET
+BT /F1 11 Tf 65.0 707.0 Td (- USERS 1 -> many VEHICLE_LISTINGS \(seller_id, sub_seller_id, created_by_id\)) Tj ET
+BT /F1 11 Tf 65.0 683.0 Td (- VEHICLE_LISTINGS 1 -> many AUCTIONS) Tj ET
+BT /F1 11 Tf 65.0 659.0 Td (- AUCTIONS 1 -> many BIDS) Tj ET
+BT /F1 11 Tf 65.0 635.0 Td (- VEHICLE_MAKES 1 -> many VEHICLE_MODELS) Tj ET
+BT /F1 11 Tf 65.0 611.0 Td (- VEHICLE_MAKES / VEHICLE_MODELS / lookup tables 1 -> many VEHICLE_LISTINGS) Tj ET
+BT /F1 11 Tf 65.0 587.0 Td (- AUCTIONS 1 -> many FEATURED_AUCTIONS \(nullable SET NULL\)) Tj ET
+BT /F1 11 Tf 65.0 563.0 Td (- VEHICLE_LISTINGS 1 -> many FEATURED_AUCTIONS \(nullable SET NULL\)) Tj ET
+BT /F1 11 Tf 65.0 539.0 Td (- MENU_ITEMS self-references parent_id -> id) Tj ET
+BT /F1 11 Tf 65.0 515.0 Td (- ADMIN_NAV_ITEMS self-references parent_id -> id) Tj ET
+BT /F1 11 Tf 65.0 491.0 Td (- VEHICLE_PAYMENT_RECORDS is denormalized and has no foreign keys) Tj ET
+BT /F2 16 Tf 50.0 452.0 Td (Included tables) Tj ET
+BT /F1 9 Tf 65.0 422.0 Td (AUCTIONS: PK id, FK vehicle_id, status, starting_price, reserve_price, starts_at, ends_at) Tj ET
+BT /F1 9 Tf 65.0 403.0 Td (AUTH_TOKENS: refresh_tokens, password_reset_tokens, email_verification_tokens, all FK user_id) Tj ET
+BT /F1 9 Tf 65.0 384.0 Td (BIDS: PK id, FK auction_id, FK bidder_id, amount, status, kafka_partition, kafka_offset) Tj ET
+BT /F1 9 Tf 65.0 365.0 Td (CONTENT_ADMIN: menu_items self FK, admin_nav_items self FK, admin_dashboard_cards, vehicle_status_metrics) Tj ET
+BT /F1 9 Tf 65.0 346.0 Td (FEATURED_AUCTIONS: PK id, FK auction_id, FK vehicle_listing_id, category_key, visibility) Tj ET
+BT /F1 9 Tf 65.0 327.0 Td (LOOKUPS: vehicle_branches, vehicle_colors, vehicle_key_options, fuel_types, bidding_models) Tj ET
+BT /F1 9 Tf 65.0 308.0 Td (USERS: PK id, email, role, is_active, is_email_verified) Tj ET
+BT /F1 9 Tf 65.0 289.0 Td (VEHICLE_LISTINGS: PK id, FK seller_id, FK make_id/model_id, FK branch/color/keys/fuel, FK bidding_model_id, chassis_number) Tj ET
+BT /F1 9 Tf 65.0 274.0 Td (  lot_number, status) Tj ET
+BT /F1 9 Tf 65.0 255.0 Td (VEHICLE_MAKES: PK id, name_en, name_ar) Tj ET
+BT /F1 9 Tf 65.0 236.0 Td (VEHICLE_MODELS: PK id, FK make_id, name_en, name_ar) Tj ET
+BT /F1 9 Tf 65.0 217.0 Td (VEHICLE_PAYMENT_RECORDS: PK id, lot_no, chassis_number, buyer_email, seller_email, payment_status, max_bid) Tj ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1190 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 7 0 R >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000191 00000 n 
+0000000266 00000 n 
+0000005706 00000 n 
+0000005843 00000 n 
+0000008459 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+8596
+%%EOF
