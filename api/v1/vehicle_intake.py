@@ -1,8 +1,12 @@
 """Seller "Add a New Car" form endpoints: static lookup dropdowns
 (unauthenticated, matching api/v1/admin.py's nav/card endpoints - reference
 data, not seller data), plus client/sub-seller search and the create +
-document-upload endpoints (authenticated - these write data attributed to
-the submitting user).
+document-upload endpoints.
+
+The latter are staff-only (core.roles.STAFF_ROLES): this whole flow is the
+admin "/admin/sellers/add-a-new-car" screen where staff enter a car on behalf
+of a seller, not a public self-serve form - client/sub-seller search also
+returns seller names/emails, which shouldn't be exposed to a plain Buyer.
 """
 
 from __future__ import annotations
@@ -13,7 +17,8 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.deps import get_current_local_user, get_db_session
+from api.deps import get_db_session, require_local_role
+from core.roles import STAFF_ROLES
 from models.user import User
 from schemas.vehicle_intake import (
     DocumentUploadRead,
@@ -31,6 +36,8 @@ from services.exceptions import DuplicateChassisNumberError, VehicleLookupNotFou
 router = APIRouter(prefix="/vehicle-intake", tags=["vehicle-intake"])
 
 LangQuery = Literal["en", "ar"]
+
+_require_staff = require_local_role(*STAFF_ROLES)
 
 
 @router.get("/makes", response_model=list[LookupOptionRead])
@@ -91,7 +98,9 @@ async def get_bidding_models(
 
 @router.get("/clients", response_model=list[UserLookupRead])
 async def search_clients(
-    q: str = Query(default=""), db: AsyncSession = Depends(get_db_session)
+    q: str = Query(default=""),
+    db: AsyncSession = Depends(get_db_session),
+    _user: User = Depends(_require_staff),
 ) -> list[UserLookupRead]:
     return await vehicle_intake_service.search_clients(db, q)
 
@@ -101,6 +110,7 @@ async def search_sub_sellers(
     client_id: uuid.UUID = Query(...),
     q: str = Query(default=""),
     db: AsyncSession = Depends(get_db_session),
+    _user: User = Depends(_require_staff),
 ) -> list[SubSellerRead]:
     return await vehicle_intake_service.search_sub_sellers(db, client_id, q)
 
@@ -108,7 +118,7 @@ async def search_sub_sellers(
 @router.post("/documents", response_model=DocumentUploadRead, status_code=status.HTTP_201_CREATED)
 async def upload_mulkhiya_document(
     file: UploadFile,
-    user: User = Depends(get_current_local_user),
+    user: User = Depends(_require_staff),
 ) -> DocumentUploadRead:
     url = await vehicle_intake_service.save_mulkhiya_document(file)
     return DocumentUploadRead(url=url)
@@ -117,7 +127,7 @@ async def upload_mulkhiya_document(
 @router.post("/vehicles", response_model=VehicleSubmissionRead, status_code=status.HTTP_201_CREATED)
 async def create_vehicle(
     payload: VehicleSubmissionCreate,
-    user: User = Depends(get_current_local_user),
+    user: User = Depends(_require_staff),
     db: AsyncSession = Depends(get_db_session),
 ) -> VehicleSubmissionRead:
     try:
@@ -137,7 +147,7 @@ async def create_vehicle(
 @router.post("/vehicles/bulk", response_model=VehicleBulkSubmitResult, status_code=status.HTTP_200_OK)
 async def create_vehicles_bulk(
     payload: VehicleBulkSubmitRequest,
-    user: User = Depends(get_current_local_user),
+    user: User = Depends(_require_staff),
     db: AsyncSession = Depends(get_db_session),
 ) -> VehicleBulkSubmitResult:
     """"Sell Multiple Cars" bulk upload - each row is validated and created

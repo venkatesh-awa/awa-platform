@@ -45,39 +45,67 @@ def _dashboard_card(label_en: str, label_ar: str, url: str, section_key: str = "
 
 
 async def test_get_admin_nav_returns_english_labels_by_default(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalars_result(
         [_nav_item("Home", "الرئيسية", "/")]
     )
 
-    response = await client.get("/api/v1/admin/nav")
+    response = await staff_client.get("/api/v1/admin/nav")
 
     assert response.status_code == 200
     assert response.json()[0]["label"] == "Home"
 
 
 async def test_get_admin_nav_returns_arabic_labels_when_requested(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalars_result(
         [_nav_item("Sellers", "البائعون", "/admin/sellers")]
     )
 
-    response = await client.get("/api/v1/admin/nav?lang=ar")
+    response = await staff_client.get("/api/v1/admin/nav?lang=ar")
 
     assert response.status_code == 200
     assert response.json()[0]["label"] == "البائعون"
 
 
-async def test_get_admin_dashboard_cards_filters_by_section(
+async def test_get_admin_nav_hides_sections_the_caller_cant_access(
+    make_role_client, mock_db_session: MagicMock
+) -> None:
+    mock_db_session.execute.return_value = _mock_scalars_result(
+        [
+            _nav_item("Sellers", "البائعون", "/admin/sellers", sort_order=1),
+            _nav_item("Management", "الإدارة", "/admin/management", sort_order=2),
+            _nav_item("Accountant", "المحاسب", "/admin/accountant", sort_order=3),
+        ]
+    )
+
+    async with make_role_client("Manager") as client:
+        response = await client.get("/api/v1/admin/nav")
+
+    assert response.status_code == 200
+    labels = {item["label"] for item in response.json()}
+    assert labels == {"Sellers", "Management"}
+
+
+async def test_get_admin_nav_requires_staff_role(
     client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    """`client` is a plain Buyer (tests/conftest.py's test_buyer fixture)."""
+    response = await client.get("/api/v1/admin/nav")
+
+    assert response.status_code == 403
+
+
+async def test_get_admin_dashboard_cards_filters_by_section(
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalars_result(
         [_dashboard_card("Add a New Car", "إضافة سيارة جديدة", "/admin/sellers/add-a-new-car")]
     )
 
-    response = await client.get("/api/v1/admin/dashboard-cards?section=sellers")
+    response = await staff_client.get("/api/v1/admin/dashboard-cards?section=sellers")
 
     assert response.status_code == 200
     body = response.json()
@@ -86,12 +114,61 @@ async def test_get_admin_dashboard_cards_filters_by_section(
     assert body[0]["url"] == "/admin/sellers/add-a-new-car"
     assert body[0]["image_url"] == "https://example.com/image.png"
 
+
 async def test_get_admin_dashboard_cards_requires_section_query_param(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
-    response = await client.get("/api/v1/admin/dashboard-cards")
+    response = await staff_client.get("/api/v1/admin/dashboard-cards")
 
     assert response.status_code == 422
+
+
+async def test_get_admin_dashboard_cards_requires_staff_role(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await client.get("/api/v1/admin/dashboard-cards?section=sellers")
+
+    assert response.status_code == 403
+
+
+async def test_get_admin_dashboard_cards_accountant_section_blocks_manager(
+    make_role_client, mock_db_session: MagicMock
+) -> None:
+    async with make_role_client("Manager") as client:
+        response = await client.get("/api/v1/admin/dashboard-cards?section=accountant")
+
+    assert response.status_code == 403
+
+
+async def test_get_admin_dashboard_cards_accountant_section_allows_accountant(
+    make_role_client, mock_db_session: MagicMock
+) -> None:
+    mock_db_session.execute.return_value = _mock_scalars_result([])
+
+    async with make_role_client("Accountant") as client:
+        response = await client.get("/api/v1/admin/dashboard-cards?section=accountant")
+
+    assert response.status_code == 200
+
+
+async def test_get_admin_dashboard_cards_management_section_blocks_accountant(
+    make_role_client, mock_db_session: MagicMock
+) -> None:
+    async with make_role_client("Accountant") as client:
+        response = await client.get("/api/v1/admin/dashboard-cards?section=management")
+
+    assert response.status_code == 403
+
+
+async def test_get_admin_dashboard_cards_management_section_allows_manager(
+    make_role_client, mock_db_session: MagicMock
+) -> None:
+    mock_db_session.execute.return_value = _mock_scalars_result([])
+
+    async with make_role_client("Manager") as client:
+        response = await client.get("/api/v1/admin/dashboard-cards?section=management")
+
+    assert response.status_code == 200
 
 
 def _vehicle_status_metric(
@@ -112,13 +189,13 @@ def _vehicle_status_metric(
 
 
 async def test_get_vehicle_status_metrics_returns_english_labels_by_default(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalars_result(
         [_vehicle_status_metric("in_yard_count", "In Yard", "في الساحة")]
     )
 
-    response = await client.get("/api/v1/admin/vehicle-status-metrics?group=realtime")
+    response = await staff_client.get("/api/v1/admin/vehicle-status-metrics?group=realtime")
 
     assert response.status_code == 200
     body = response.json()
@@ -129,21 +206,29 @@ async def test_get_vehicle_status_metrics_returns_english_labels_by_default(
 
 
 async def test_get_vehicle_status_metrics_returns_arabic_labels_when_requested(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalars_result(
         [_vehicle_status_metric("in_yard_count", "In Yard", "في الساحة")]
     )
 
-    response = await client.get("/api/v1/admin/vehicle-status-metrics?group=realtime&lang=ar")
+    response = await staff_client.get("/api/v1/admin/vehicle-status-metrics?group=realtime&lang=ar")
 
     assert response.status_code == 200
     assert response.json()[0]["label"] == "في الساحة"
 
 
 async def test_get_vehicle_status_metrics_requires_group_query_param(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
-    response = await client.get("/api/v1/admin/vehicle-status-metrics")
+    response = await staff_client.get("/api/v1/admin/vehicle-status-metrics")
 
     assert response.status_code == 422
+
+
+async def test_get_vehicle_status_metrics_requires_staff_role(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await client.get("/api/v1/admin/vehicle-status-metrics?group=realtime")
+
+    assert response.status_code == 403

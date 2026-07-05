@@ -37,7 +37,7 @@ from models.user import (
     RefreshToken,
     User,
 )
-from schemas.auth import SignUpRequest, TokenPair
+from schemas.auth import SignUpRequest, TokenPair, UserRead
 from services import role_service
 from services.exceptions import (
     AccountInactiveError,
@@ -68,6 +68,24 @@ def _normalize_email(email: str) -> str:
 
 async def get_user_by_id(db: AsyncSession, user_id: uuid.UUID) -> User | None:
     return await db.get(User, user_id)
+
+
+async def to_user_read(db: AsyncSession, user: User) -> UserRead:
+    """Build the API-facing user representation. `role` is stringified from
+    the primary_role FK, `roles` is the full set (models/role.py's
+    user_roles) - neither exists as a plain attribute on User itself."""
+    roles = await role_service.get_user_roles(db, user)
+    return UserRead(
+        id=user.id,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        phone=user.phone,
+        role=user.primary_role.name,
+        roles=[role.name for role in roles] or [user.primary_role.name],
+        is_email_verified=user.is_email_verified,
+        created_at=user.created_at,
+    )
 
 
 async def _get_user_by_email(db: AsyncSession, email: str) -> User | None:

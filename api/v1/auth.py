@@ -48,7 +48,7 @@ _RESET_SENT_MESSAGE = "If an account exists for that email, a reset link has bee
 @router.post("/signup", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def sign_up(
     payload: SignUpRequest, db: AsyncSession = Depends(get_db_session)
-) -> User:
+) -> UserRead:
     try:
         result = await auth_service.sign_up(db, payload)
     except EmailAlreadyRegisteredError as exc:
@@ -58,7 +58,7 @@ async def sign_up(
     # Hand the raw verification token to the email layer. Emailing is out of
     # scope here; log it (redacted in prod sinks) as the integration seam.
     logger.info("email_verification_token_issued", user_id=str(result.user.id))
-    return result.user
+    return await auth_service.to_user_read(db, result.user)
 
 
 @router.post("/signin", response_model=TokenPair)
@@ -143,5 +143,8 @@ async def verify_email(
 
 
 @router.get("/me", response_model=UserRead)
-async def get_me(user: User = Depends(get_current_local_user)) -> User:
-    return user
+async def get_me(
+    user: User = Depends(get_current_local_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> UserRead:
+    return await auth_service.to_user_read(db, user)

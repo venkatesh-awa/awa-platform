@@ -46,13 +46,13 @@ def _record(lot_no: str = "100288", payment_status: str = "pending_buyer_payment
 
 
 async def test_get_vehicle_payment_status_count_returns_counts_per_status(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_grouped_counts_result(
         [("paid_awaiting_documents", 2), ("pending_buyer_payment", 5)]
     )
 
-    response = await client.get("/api/v1/admin/vehicle-payment-status-count")
+    response = await staff_client.get("/api/v1/admin/vehicle-payment-status-count")
 
     assert response.status_code == 200
     body = response.json()
@@ -62,15 +62,23 @@ async def test_get_vehicle_payment_status_count_returns_counts_per_status(
     assert body["pending_seller_payment"] == 0
 
 
-async def test_get_vehicle_payment_status_returns_paginated_records(
+async def test_get_vehicle_payment_status_count_requires_staff_role(
     client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await client.get("/api/v1/admin/vehicle-payment-status-count")
+
+    assert response.status_code == 403
+
+
+async def test_get_vehicle_payment_status_returns_paginated_records(
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.side_effect = [
         _mock_scalar_one_result(1),
         _mock_scalars_result([_record()]),
     ]
 
-    response = await client.get("/api/v1/admin/vehicle-payment-status?status=ALL&page=1&page_size=50")
+    response = await staff_client.get("/api/v1/admin/vehicle-payment-status?status=ALL&page=1&page_size=50")
 
     assert response.status_code == 200
     body = response.json()
@@ -81,14 +89,14 @@ async def test_get_vehicle_payment_status_returns_paginated_records(
 
 
 async def test_get_vehicle_payment_status_filters_by_status(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.side_effect = [
         _mock_scalar_one_result(1),
         _mock_scalars_result([_record(payment_status="paid_awaiting_documents")]),
     ]
 
-    response = await client.get(
+    response = await staff_client.get(
         "/api/v1/admin/vehicle-payment-status?status=paid_awaiting_documents&page=1&page_size=50"
     )
 
@@ -98,14 +106,14 @@ async def test_get_vehicle_payment_status_filters_by_status(
 
 
 async def test_get_vehicle_in_store_returns_paginated_records(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.side_effect = [
         _mock_scalar_one_result(1),
         _mock_scalars_result([_record(lot_no="103147")]),
     ]
 
-    response = await client.get("/api/v1/admin/vehicle-in-store?page=1&page_size=50")
+    response = await staff_client.get("/api/v1/admin/vehicle-in-store?page=1&page_size=50")
 
     assert response.status_code == 200
     body = response.json()
@@ -118,14 +126,22 @@ async def test_get_vehicle_in_store_returns_paginated_records(
 
 
 async def test_get_vehicle_in_store_filters_by_id(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.side_effect = [
         _mock_scalar_one_result(1),
         _mock_scalars_result([_record(lot_no="103147")]),
     ]
 
-    response = await client.get("/api/v1/admin/vehicle-in-store?id=103147")
+    response = await staff_client.get("/api/v1/admin/vehicle-in-store?id=103147")
 
     assert response.status_code == 200
     assert response.json()["records"][0]["id"] == "103147"
+
+
+async def test_get_vehicle_in_store_requires_staff_role(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await client.get("/api/v1/admin/vehicle-in-store?page=1&page_size=50")
+
+    assert response.status_code == 403

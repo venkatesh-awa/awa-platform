@@ -85,6 +85,12 @@ class MessageResponse(BaseModel):
 
 
 class UserRead(BaseModel):
+    """Built explicitly via services.auth_service.to_user_read, not
+    model_validate(user) - User has no `role`/`roles` attributes (see
+    models/user.py's primary_role_id/primary_role + models/role.py's
+    user_roles), so from_attributes can't populate these fields on its own.
+    """
+
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
@@ -93,5 +99,6 @@ class UserRead(BaseModel):
     last_name: str
     phone: str | None
     role: str
+    roles: list[str]
     is_email_verified: bool
     created_at: datetime

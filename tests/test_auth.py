@@ -69,6 +69,7 @@ def _make_user(password: str = "Secret123", **overrides: object) -> User:
     user.id = uuid.uuid4()
     user.failed_login_attempts = overrides.get("failed_login_attempts", 0)
     user.locked_until = overrides.get("locked_until")
+    user.created_at = datetime.now(UTC)  # normally a DB server_default; set here for in-memory use
     return user
 
 
@@ -319,3 +320,25 @@ async def test_forgot_password_is_generic_for_unknown_email(
 async def test_me_requires_bearer_token(unauthenticated_client: AsyncClient) -> None:
     response = await unauthenticated_client.get("/api/v1/auth/me")
     assert response.status_code == 401
+
+
+async def test_me_returns_role_and_roles(client: AsyncClient) -> None:
+    """Regression test: UserRead.role used to read a `User.role` attribute
+    that hasn't existed since the primary_role_id/roles refactor, so this
+    endpoint 500'd. See services.auth_service.to_user_read."""
+    response = await client.get("/api/v1/auth/me")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["role"] == "Buyer"
+    assert body["roles"] == ["Buyer"]
+
+
+async def test_to_user_read_builds_role_and_roles_from_primary_role() -> None:
+    user = _make_user()
+    session = _make_session()
+
+    result = await auth_service.to_user_read(session, user)
+
+    assert result.role == "Buyer"
+    assert result.roles == ["Buyer"]

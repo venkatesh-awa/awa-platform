@@ -120,7 +120,7 @@ async def test_get_years_returns_seeded_years(client: AsyncClient, mock_db_sessi
     assert response.json() == [2025, 2024, 1927]
 
 
-async def test_create_vehicle_happy_path(client: AsyncClient, mock_db_session: MagicMock) -> None:
+async def test_create_vehicle_happy_path(staff_client: AsyncClient, mock_db_session: MagicMock) -> None:
     lookup_row = _make("Toyota", "تويوتا")
     mock_db_session.execute.return_value = _mock_scalar_result(lookup_row)
 
@@ -129,7 +129,7 @@ async def test_create_vehicle_happy_path(client: AsyncClient, mock_db_session: M
 
     mock_db_session.refresh = AsyncMock(side_effect=_fake_refresh)
 
-    response = await client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
+    response = await staff_client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
 
     assert response.status_code == 201
     body = response.json()
@@ -137,21 +137,21 @@ async def test_create_vehicle_happy_path(client: AsyncClient, mock_db_session: M
     assert body["status"] == "submitted"
 
 
-async def test_create_vehicle_rejects_unknown_make(client: AsyncClient, mock_db_session: MagicMock) -> None:
+async def test_create_vehicle_rejects_unknown_make(staff_client: AsyncClient, mock_db_session: MagicMock) -> None:
     mock_db_session.execute.return_value = _mock_scalar_result(None)
 
-    response = await client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
+    response = await staff_client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
 
     assert response.status_code == 404
 
 
 async def test_create_vehicle_rejects_duplicate_chassis_number(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalar_result(_make("Toyota", "تويوتا"))
     mock_db_session.commit.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
 
-    response = await client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
+    response = await staff_client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
 
     assert response.status_code == 409
 
@@ -166,30 +166,58 @@ async def test_create_vehicle_requires_auth(
     assert response.status_code == 401
 
 
-async def test_search_sub_sellers_requires_client_id(client: AsyncClient, mock_db_session: MagicMock) -> None:
-    response = await client.get("/api/v1/vehicle-intake/sub-sellers")
+async def test_create_vehicle_requires_staff_role(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    """`client` is a plain Buyer (tests/conftest.py's test_buyer fixture) -
+    listing intake is a staff-only flow (api/v1/vehicle_intake.py)."""
+    response = await client.post("/api/v1/vehicle-intake/vehicles", json=_submission_payload())
+
+    assert response.status_code == 403
+
+
+async def test_search_clients_requires_staff_role(client: AsyncClient, mock_db_session: MagicMock) -> None:
+    response = await client.get("/api/v1/vehicle-intake/clients")
+
+    assert response.status_code == 403
+
+
+async def test_search_sub_sellers_requires_client_id(
+    staff_client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await staff_client.get("/api/v1/vehicle-intake/sub-sellers")
 
     assert response.status_code == 422
 
 
-async def test_search_sub_sellers_scopes_to_client(client: AsyncClient, mock_db_session: MagicMock) -> None:
+async def test_search_sub_sellers_requires_staff_role(
+    client: AsyncClient, mock_db_session: MagicMock
+) -> None:
+    response = await client.get(f"/api/v1/vehicle-intake/sub-sellers?client_id={uuid.uuid4()}")
+
+    assert response.status_code == 403
+
+
+async def test_search_sub_sellers_scopes_to_client(
+    staff_client: AsyncClient, mock_db_session: MagicMock
+) -> None:
     mock_db_session.execute.return_value = _mock_scalars_result([])
 
-    response = await client.get(f"/api/v1/vehicle-intake/sub-sellers?client_id={uuid.uuid4()}")
+    response = await staff_client.get(f"/api/v1/vehicle-intake/sub-sellers?client_id={uuid.uuid4()}")
 
     assert response.status_code == 200
     assert response.json() == []
 
 
 async def test_search_sub_sellers_returns_name_and_phone(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     sub_seller = SubSeller(
         id=uuid.uuid4(), seller_id=uuid.uuid4(), name="Anuritha 1", phone="+876098123", is_active=True
     )
     mock_db_session.execute.return_value = _mock_scalars_result([sub_seller])
 
-    response = await client.get(f"/api/v1/vehicle-intake/sub-sellers?client_id={uuid.uuid4()}")
+    response = await staff_client.get(f"/api/v1/vehicle-intake/sub-sellers?client_id={uuid.uuid4()}")
 
     assert response.status_code == 200
     body = response.json()
@@ -199,7 +227,7 @@ async def test_search_sub_sellers_returns_name_and_phone(
 
 
 async def test_create_vehicle_rejects_sub_seller_not_belonging_to_client(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     make = _make("Toyota", "تويوتا")
 
@@ -215,7 +243,7 @@ async def test_create_vehicle_rejects_sub_seller_not_belonging_to_client(
 
     mock_db_session.execute.side_effect = _execute_side_effect
 
-    response = await client.post(
+    response = await staff_client.post(
         "/api/v1/vehicle-intake/vehicles",
         json=_submission_payload(sub_seller_id=str(uuid.uuid4())),
     )
@@ -232,7 +260,7 @@ def _lookup(name_en: str, name_ar: str = "") -> MagicMock:
     return row
 
 
-async def test_bulk_create_happy_path(client: AsyncClient, mock_db_session: MagicMock) -> None:
+async def test_bulk_create_happy_path(staff_client: AsyncClient, mock_db_session: MagicMock) -> None:
     make = _lookup("Toyota", "تويوتا")
     model = _lookup("Camry", "كامري")
     branch = _lookup("Abu Dhabi", "أبو ظبي")
@@ -252,7 +280,7 @@ async def test_bulk_create_happy_path(client: AsyncClient, mock_db_session: Magi
         _mock_scalars_first_result(seller_user),
     ]
 
-    response = await client.post(
+    response = await staff_client.post(
         "/api/v1/vehicle-intake/vehicles/bulk", json={"rows": [_bulk_row()]}
     )
 
@@ -265,11 +293,11 @@ async def test_bulk_create_happy_path(client: AsyncClient, mock_db_session: Magi
 
 
 async def test_bulk_create_reports_row_error_for_unknown_make(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     mock_db_session.execute.return_value = _mock_scalars_first_result(None)
 
-    response = await client.post(
+    response = await staff_client.post(
         "/api/v1/vehicle-intake/vehicles/bulk",
         json={"rows": [_bulk_row(make="Not A Real Make")]},
     )
@@ -283,7 +311,7 @@ async def test_bulk_create_reports_row_error_for_unknown_make(
 
 
 async def test_bulk_create_rejects_duplicate_chassis_number(
-    client: AsyncClient, mock_db_session: MagicMock
+    staff_client: AsyncClient, mock_db_session: MagicMock
 ) -> None:
     make = _lookup("Toyota", "تويوتا")
     model = _lookup("Camry", "كامري")
@@ -305,7 +333,7 @@ async def test_bulk_create_rejects_duplicate_chassis_number(
     ]
     mock_db_session.commit.side_effect = IntegrityError("insert", {}, Exception("duplicate"))
 
-    response = await client.post(
+    response = await staff_client.post(
         "/api/v1/vehicle-intake/vehicles/bulk", json={"rows": [_bulk_row()]}
     )
 
@@ -323,7 +351,13 @@ async def test_bulk_create_requires_auth(unauthenticated_client: AsyncClient, mo
     assert response.status_code == 401
 
 
-async def test_bulk_create_rejects_empty_rows(client: AsyncClient, mock_db_session: MagicMock) -> None:
-    response = await client.post("/api/v1/vehicle-intake/vehicles/bulk", json={"rows": []})
+async def test_bulk_create_requires_staff_role(client: AsyncClient, mock_db_session: MagicMock) -> None:
+    response = await client.post("/api/v1/vehicle-intake/vehicles/bulk", json={"rows": [_bulk_row()]})
+
+    assert response.status_code == 403
+
+
+async def test_bulk_create_rejects_empty_rows(staff_client: AsyncClient, mock_db_session: MagicMock) -> None:
+    response = await staff_client.post("/api/v1/vehicle-intake/vehicles/bulk", json={"rows": []})
 
     assert response.status_code == 422
