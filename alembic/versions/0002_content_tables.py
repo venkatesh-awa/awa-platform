@@ -218,7 +218,7 @@ def _seed(
                 "parent_id": None,
                 "label_en": "Log In",
                 "label_ar": "تسجيل الدخول",
-                "url": "/myportal/oidc/etdx1",
+                "url": "login",
                 "opens_new_tab": False,
                 "sort_order": 6,
             },

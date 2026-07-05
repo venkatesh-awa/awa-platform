@@ -41,7 +41,7 @@ def upgrade() -> None:
             UPDATE menu_items
             SET visibility = 'anonymous'
             WHERE LOWER(label_en) IN ('sign up', 'log in', 'login', 'sign in', 'register')
-               OR LOWER(url) IN ('/login', '/sign-up', '/signup', '/register', '/myportal/oidc/etdx1')
+               OR LOWER(url) IN ('/login', '/sign-up', '/signup', '/register', 'login')
             """
         )
     )
