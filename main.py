@@ -9,10 +9,10 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-
 from pathlib import Path
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -72,10 +72,14 @@ def create_app() -> FastAPI:
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
-        logger.warning("request_validation_failed", path=str(request.url), errors=exc.errors())
+        # Pydantic error dicts can carry non-JSON-native values in `ctx` (e.g.
+        # Decimal for a `gt=0` constraint) - jsonable_encoder converts those,
+        # where a raw json.dumps of exc.errors() would blow up into a 500.
+        errors = jsonable_encoder(exc.errors())
+        logger.warning("request_validation_failed", path=str(request.url), errors=errors)
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={"detail": "Invalid request", "errors": exc.errors()},
+            content={"detail": "Invalid request", "errors": errors},
         )
 
     @app.exception_handler(Exception)

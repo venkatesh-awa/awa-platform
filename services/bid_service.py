@@ -30,6 +30,7 @@ from core.redis import publish_bid_update, try_accept_bid
 from models.auction import Auction, Bid
 from models.user import User
 from schemas.bid import BidAccepted, BidResult
+from services import role_service
 from services.auction_service import get_live_auction
 from services.exceptions import BidNotEligibleError, BidPublishError, MalformedBidEvent
 
@@ -69,13 +70,17 @@ def parse_bid_envelope(raw_value: bytes) -> dict:
     return data
 
 
-def validate_bid_eligibility(user: User, amount: Decimal) -> None:  # noqa: ARG001
+def validate_bid_eligibility(role_names: set[str], amount: Decimal) -> None:  # noqa: ARG001
     """Fast pre-check before publishing to Kafka. Deliberately conservative:
     this is a UX-speed gate, not the source of truth for eligibility - the
     auction worker re-validates against committed state in decide_bid().
     Wire this up to the real deposit/buying-limit service in a later sprint.
+
+    Checks the user's full set of assigned roles (models/role.py's
+    `user_roles`), not just their primary role - a Seller who also holds the
+    Buyer role must still be able to bid.
     """
-    if user.primary_role.name not in REQUIRED_BID_ROLES:
+    if role_names.isdisjoint(REQUIRED_BID_ROLES):
         raise BidNotEligibleError(
             f"Only {' or '.join(REQUIRED_BID_ROLES)} roles may place bids (BRD R088)"
         )
@@ -88,7 +93,8 @@ async def submit_bid(db: AsyncSession, auction_id: uuid.UUID, user: User, amount
     settings = get_settings()
 
     await get_live_auction(db, auction_id)
-    validate_bid_eligibility(user, amount)
+    user_roles = await role_service.get_user_roles(db, user)
+    validate_bid_eligibility({role.name for role in user_roles}, amount)
 
     bid_id = uuid.uuid4()
     submitted_at = datetime.now(UTC)

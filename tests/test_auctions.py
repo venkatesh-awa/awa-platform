@@ -9,6 +9,7 @@ from httpx import AsyncClient
 
 from models.auction import Auction
 from models.content import VehicleListing
+from models.role import Role
 
 
 def _make_auction(status_: str = "live") -> Auction:
@@ -41,6 +42,12 @@ def _make_auction(status_: str = "live") -> Auction:
 def _mock_scalar_result(value):
     result = MagicMock()
     result.scalar_one_or_none.return_value = value
+    return result
+
+
+def _mock_scalars_result(values: list):
+    result = MagicMock()
+    result.scalars.return_value.all.return_value = values
     return result
 
 
@@ -86,7 +93,10 @@ async def test_submit_bid_publishes_to_kafka_and_returns_202(
     client: AsyncClient, mock_db_session: MagicMock, monkeypatch
 ) -> None:
     auction = _make_auction()
-    mock_db_session.execute.return_value = _mock_scalar_result(auction)
+    mock_db_session.execute.side_effect = [
+        _mock_scalar_result(auction),
+        _mock_scalars_result([Role(id=uuid.uuid4(), name="Buyer")]),
+    ]
 
     published: dict = {}
 
@@ -109,7 +119,10 @@ async def test_submit_bid_returns_503_when_kafka_unavailable(
     client: AsyncClient, mock_db_session: MagicMock, monkeypatch
 ) -> None:
     auction = _make_auction()
-    mock_db_session.execute.return_value = _mock_scalar_result(auction)
+    mock_db_session.execute.side_effect = [
+        _mock_scalar_result(auction),
+        _mock_scalars_result([Role(id=uuid.uuid4(), name="Buyer")]),
+    ]
 
     async def failing_publish(*args, **kwargs):
         raise ConnectionError("broker unreachable")

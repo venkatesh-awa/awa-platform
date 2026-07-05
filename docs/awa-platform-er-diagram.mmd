@@ -1,15 +1,27 @@
 erDiagram
+    %% --- Identity & RBAC ---
+    ROLES ||--o{ USER_ROLES : grants
+    USERS ||--o{ USER_ROLES : holds
     USERS ||--o{ REFRESH_TOKENS : has
     USERS ||--o{ PASSWORD_RESET_TOKENS : has
     USERS ||--o{ EMAIL_VERIFICATION_TOKENS : has
-    USERS ||--o{ BIDS : places
-    USERS ||--o{ VEHICLE_LISTINGS : seller
-    USERS ||--o{ VEHICLE_LISTINGS : sub_seller
-    USERS ||--o{ VEHICLE_LISTINGS : created_by
+    ROLES ||--o{ USERS : primary_role
 
+    %% --- Sellers / sub-sellers ---
+    USERS ||--o{ SUB_SELLERS : seller
+    USERS ||--o{ VEHICLE_LISTINGS : seller
+    USERS ||--o{ VEHICLE_LISTINGS : sub_seller_client
+    USERS ||--o{ VEHICLE_LISTINGS : created_by
+    SUB_SELLERS ||--o{ VEHICLE_LISTINGS : sub_seller
+
+    %% --- Auctions & bids ---
+    USERS ||--o{ BIDS : places
     VEHICLE_LISTINGS ||--o{ AUCTIONS : listed_in
     AUCTIONS ||--o{ BIDS : receives
+    AUCTIONS ||--o{ FEATURED_AUCTIONS : featured_ref
+    VEHICLE_LISTINGS ||--o{ FEATURED_AUCTIONS : vehicle_ref
 
+    %% --- Vehicle intake lookups ---
     VEHICLE_MAKES ||--o{ VEHICLE_MODELS : has
     VEHICLE_MAKES ||--o{ VEHICLE_LISTINGS : make
     VEHICLE_MODELS ||--o{ VEHICLE_LISTINGS : model
@@ -19,61 +31,46 @@ erDiagram
     FUEL_TYPES ||--o{ VEHICLE_LISTINGS : fuel
     BIDDING_MODELS ||--o{ VEHICLE_LISTINGS : bidding_model
 
-    AUCTIONS ||--o{ FEATURED_AUCTIONS : featured_ref
-    VEHICLE_LISTINGS ||--o{ FEATURED_AUCTIONS : vehicle_ref
-
+    %% --- Public content chrome ---
     MENU_ITEMS ||--o{ MENU_ITEMS : parent_child
+
+    %% --- Admin dashboard chrome ---
     ADMIN_NAV_ITEMS ||--o{ ADMIN_NAV_ITEMS : parent_child
+
+    ROLES {
+        uuid id PK
+        string name UK "Buyer, Seller, Admin, Accountant, Inspector, Manager, Operations, AuctionsHead"
+        string description
+        boolean is_active
+    }
+
+    USER_ROLES {
+        uuid id PK
+        uuid user_id FK
+        uuid role_id FK
+        datetime assigned_at
+        "UK(user_id, role_id) - a user may hold several roles at once"
+    }
 
     USERS {
         uuid id PK
-        string email
-        string role
+        string email UK
+        string password_hash "Argon2id"
+        string first_name
+        string last_name
+        string phone
+        uuid primary_role_id FK "mirrors one of this user's user_roles rows"
         boolean is_active
         boolean is_email_verified
-    }
-
-    VEHICLE_LISTINGS {
-        uuid id PK
-        uuid seller_id FK
-        uuid sub_seller_id FK
-        uuid created_by_id FK
-        uuid make_id FK
-        uuid model_id FK
-        uuid branch_id FK
-        uuid color_id FK
-        uuid keys_option_id FK
-        uuid fuel_type_id FK
-        uuid bidding_model_id FK
-        string chassis_number
-        string lot_number
-        string status
-    }
-
-    AUCTIONS {
-        uuid id PK
-        uuid vehicle_id FK
-        string status
-        decimal starting_price
-        decimal reserve_price
-        datetime starts_at
-        datetime ends_at
-    }
-
-    BIDS {
-        uuid id PK
-        uuid auction_id FK
-        uuid bidder_id FK
-        decimal amount
-        string status
-        int kafka_partition
-        int kafka_offset
+        int failed_login_attempts
+        datetime locked_until
+        datetime last_login_at
     }
 
     REFRESH_TOKENS {
         uuid id PK
         uuid user_id FK
-        string token_hash
+        string token_hash UK "SHA-256, raw value never stored"
         datetime expires_at
         datetime revoked_at
     }
@@ -81,7 +78,7 @@ erDiagram
     PASSWORD_RESET_TOKENS {
         uuid id PK
         uuid user_id FK
-        string token_hash
+        string token_hash UK
         datetime expires_at
         datetime used_at
     }
@@ -89,22 +86,80 @@ erDiagram
     EMAIL_VERIFICATION_TOKENS {
         uuid id PK
         uuid user_id FK
-        string token_hash
+        string token_hash UK
         datetime expires_at
         datetime used_at
+    }
+
+    SUB_SELLERS {
+        uuid id PK
+        uuid seller_id FK "-> users.id, CASCADE"
+        string name
+        string phone
+        string external_id "source-system id, for traceability"
+        boolean is_active
+    }
+
+    VEHICLE_LISTINGS {
+        uuid id PK
+        uuid seller_id FK "-> users.id, SET NULL"
+        uuid sub_seller_id FK "-> sub_sellers.id, NO ACTION"
+        uuid created_by_id FK "-> users.id, NO ACTION"
+        uuid make_id FK
+        uuid model_id FK
+        uuid branch_id FK
+        uuid color_id FK
+        uuid keys_option_id FK
+        uuid fuel_type_id FK
+        uuid bidding_model_id FK
+        string chassis_number UK
+        string lot_number
+        string status "submitted/approved/rejected/published/..."
+        boolean is_active
+        decimal target_selling_price
+        decimal minimum_selling_price
+    }
+
+    AUCTIONS {
+        uuid id PK
+        uuid vehicle_id FK "-> vehicle_listings.id, NO ACTION"
+        string status "scheduled/live/closed"
+        decimal starting_price
+        decimal reserve_price
+        datetime starts_at
+        datetime ends_at
+        "CK: starting_price >= 0, ends_at > starts_at"
+    }
+
+    BIDS {
+        uuid id PK
+        uuid auction_id FK "-> auctions.id, CASCADE"
+        uuid bidder_id FK "-> users.id, NO ACTION"
+        decimal amount
+        string status "pending/accepted/rejected"
+        int kafka_partition
+        int kafka_offset
+        "UK(kafka_partition, kafka_offset) WHERE kafka_offset IS NOT NULL"
     }
 
     VEHICLE_MAKES {
         uuid id PK
         string name_en
         string name_ar
+        int sort_order
+        boolean is_active
     }
 
     VEHICLE_MODELS {
         uuid id PK
-        uuid make_id FK
+        uuid make_id FK "CASCADE"
         string name_en
         string name_ar
+    }
+
+    VEHICLE_YEARS {
+        uuid id PK
+        int year UK
     }
 
     VEHICLE_BRANCHES {
@@ -139,22 +194,53 @@ erDiagram
 
     FEATURED_AUCTIONS {
         uuid id PK
-        uuid auction_id FK
-        uuid vehicle_listing_id FK
+        uuid auction_id FK "nullable, SET NULL"
+        uuid vehicle_listing_id FK "nullable, SET NULL"
         string category_key
         string visibility
     }
 
     MENU_ITEMS {
         uuid id PK
-        uuid parent_id FK
+        uuid parent_id FK "self, NO ACTION"
+        string label_en
+        string url
+    }
+
+    AUCTION_CATEGORIES {
+        uuid id PK
+        string name_en
+        string slug UK
+    }
+
+    HOW_IT_WORKS_STEPS {
+        uuid id PK
+        int step_number
+        string title_en
+    }
+
+    VALUE_ADDED_SERVICES {
+        uuid id PK
+        string name_en
+        string link_url
+    }
+
+    FOOTER_SETTINGS {
+        uuid id PK "singleton row"
+        string about_text_en
+        string support_email
+    }
+
+    FOOTER_LINKS {
+        uuid id PK
+        string section
         string label_en
         string url
     }
 
     ADMIN_NAV_ITEMS {
         uuid id PK
-        uuid parent_id FK
+        uuid parent_id FK "self, NO ACTION"
         string label_en
         string url
     }
@@ -177,8 +263,8 @@ erDiagram
         uuid id PK
         string lot_no
         string chassis_number
-        string buyer_email
-        string seller_email
+        string buyer_email "denormalized - see models/vehicle_payment.py"
+        string seller_email "denormalized"
         string payment_status
         decimal max_bid
     }

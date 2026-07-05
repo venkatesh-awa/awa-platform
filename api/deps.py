@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Callable, Coroutine
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -13,7 +14,7 @@ from core.database import get_db_session
 from core.redis import get_redis
 from core.security import CurrentUser, get_current_user, require_role
 from models.user import User
-from services import auth_service
+from services import auth_service, role_service
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -54,6 +55,28 @@ async def get_current_local_user(
     return user
 
 
+def require_local_role(*role_names: str) -> Callable[..., Coroutine[object, object, User]]:
+    """Dependency factory gating a local-auth endpoint by role, checking a
+    user's full set of assigned roles (models/role.py's `user_roles`) rather
+    than only their primary one - e.g. an Admin who also holds Buyer should
+    still pass `require_local_role("Admin")`.
+    """
+
+    async def _checker(
+        user: User = Depends(get_current_local_user),
+        db: AsyncSession = Depends(get_db_session),
+    ) -> User:
+        held = {role.name for role in await role_service.get_user_roles(db, user)}
+        if held.isdisjoint(role_names):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Requires role: {' or '.join(role_names)}",
+            )
+        return user
+
+    return _checker
+
+
 __all__ = [
     "get_db_session",
     "get_redis",
@@ -61,4 +84,5 @@ __all__ = [
     "get_current_user",
     "get_current_local_user",
     "require_role",
+    "require_local_role",
 ]

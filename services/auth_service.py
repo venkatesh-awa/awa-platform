@@ -243,7 +243,12 @@ async def verify_email(db: AsyncSession, raw_token: str) -> None:
 
 async def _issue_token_pair(db: AsyncSession, user: User) -> TokenPair:
     settings = get_settings()
-    access_token, expires_in = create_access_token(user.id, [user.primary_role.name])
+    # All roles the user holds, not just their primary one - a user with
+    # both Seller and Buyer roles must be authorized as both (see
+    # services/role_service.py and services/bid_service.REQUIRED_BID_ROLES).
+    user_roles = await role_service.get_user_roles(db, user)
+    role_names = [role.name for role in user_roles] or [user.primary_role.name]
+    access_token, expires_in = create_access_token(user.id, role_names)
 
     raw_refresh = generate_opaque_token()
     db.add(

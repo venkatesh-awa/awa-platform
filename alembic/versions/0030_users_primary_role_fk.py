@@ -70,7 +70,12 @@ def upgrade() -> None:
         )
     )
 
-    op.alter_column("users", "primary_role_id", nullable=False)
+    op.alter_column(
+        "users",
+        "primary_role_id",
+        existing_type=sa.Uuid(as_uuid=True),
+        nullable=False,
+    )
     op.create_foreign_key(
         "fk_users_primary_role_id_roles",
         "users",
@@ -103,7 +108,12 @@ def downgrade() -> None:
             """
         )
     )
-    op.alter_column("user_roles", "is_primary", server_default=None)
+    op.alter_column(
+        "user_roles",
+        "is_primary",
+        existing_type=sa.Boolean(),
+        server_default=None,
+    )
     op.create_index(
         "uq_user_roles_one_primary_per_user",
         "user_roles",
@@ -123,7 +133,13 @@ def downgrade() -> None:
             """
         )
     )
-    op.alter_column("users", "role", nullable=False, server_default="Buyer")
+    op.alter_column(
+        "users",
+        "role",
+        existing_type=sa.String(length=30),
+        nullable=False,
+        server_default="Buyer",
+    )
 
     op.drop_index("ix_users_primary_role_id", table_name="users")
     op.drop_constraint("fk_users_primary_role_id_roles", "users", type_="foreignkey")
