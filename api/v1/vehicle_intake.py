@@ -18,7 +18,10 @@ from models.user import User
 from schemas.vehicle_intake import (
     DocumentUploadRead,
     LookupOptionRead,
+    SubSellerRead,
     UserLookupRead,
+    VehicleBulkSubmitRequest,
+    VehicleBulkSubmitResult,
     VehicleSubmissionCreate,
     VehicleSubmissionRead,
 )
@@ -93,12 +96,12 @@ async def search_clients(
     return await vehicle_intake_service.search_clients(db, q)
 
 
-@router.get("/sub-sellers", response_model=list[UserLookupRead])
+@router.get("/sub-sellers", response_model=list[SubSellerRead])
 async def search_sub_sellers(
     client_id: uuid.UUID = Query(...),
     q: str = Query(default=""),
     db: AsyncSession = Depends(get_db_session),
-) -> list[UserLookupRead]:
+) -> list[SubSellerRead]:
     return await vehicle_intake_service.search_sub_sellers(db, client_id, q)
 
 
@@ -129,3 +132,23 @@ async def create_vehicle(
             detail=f"Chassis number already submitted: {exc.chassis_number}",
         ) from exc
     return VehicleSubmissionRead.model_validate(submission)
+
+
+@router.post("/vehicles/bulk", response_model=VehicleBulkSubmitResult, status_code=status.HTTP_200_OK)
+async def create_vehicles_bulk(
+    payload: VehicleBulkSubmitRequest,
+    user: User = Depends(get_current_local_user),
+    db: AsyncSession = Depends(get_db_session),
+) -> VehicleBulkSubmitResult:
+    """"Sell Multiple Cars" bulk upload - each row is validated and created
+    independently, so partial success (some rows created, others rejected)
+    is a 200 response with per-row results rather than an all-or-nothing
+    transaction."""
+    results = await vehicle_intake_service.bulk_create_vehicle_submissions(db, payload.rows, user.id)
+    created_count = sum(1 for r in results if r.status == "created")
+    return VehicleBulkSubmitResult(
+        total=len(results),
+        created_count=created_count,
+        error_count=len(results) - created_count,
+        results=results,
+    )

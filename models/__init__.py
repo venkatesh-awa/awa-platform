@@ -10,6 +10,7 @@ from models.content import (
     ValueAddedService,
     VehicleListing,
 )
+from models.sub_seller import SubSeller
 from models.user import (
     EmailVerificationToken,
     PasswordResetToken,
@@ -51,6 +52,7 @@ __all__ = [
     "VehicleKeyOption",
     "FuelType",
     "BiddingModel",
+    "SubSeller",
     "User",
     "RefreshToken",
     "PasswordResetToken",

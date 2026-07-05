@@ -21,6 +21,7 @@ from core.database import Base
 from models.auction import Auction
 
 if TYPE_CHECKING:
+    from models.sub_seller import SubSeller
     from models.user import User
     from models.vehicle_intake import (
         BiddingModel,
@@ -94,12 +95,13 @@ class VehicleListing(Base):
     target_selling_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     minimum_selling_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
     previous_number_plate: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    # A seller's own sub-account submitting on their behalf - distinct from
-    # `seller_id` (the client) and `created_by_id` (the admin operator).
-    # NO ACTION (not SET NULL): SQL Server rejects a second SET NULL cascade
-    # path into `users` alongside seller_id's existing one.
+    # A named contact under the client submitting on their behalf - distinct
+    # from `seller_id` (the client) and `created_by_id` (the admin operator).
+    # References sub_sellers, not users: a sub-seller isn't its own account.
+    # NO ACTION (not SET NULL): sub_sellers.seller_id cascades into users, and
+    # SQL Server rejects a second cascade path into users via this column.
     sub_seller_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
+        Uuid(as_uuid=True), ForeignKey("sub_sellers.id", ondelete="NO ACTION"), nullable=True
     )
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True), ForeignKey("users.id", ondelete="NO ACTION"), nullable=True
@@ -116,7 +118,7 @@ class VehicleListing(Base):
 
     auctions: Mapped[list[Auction]] = relationship(back_populates="vehicle")
     seller: Mapped[User | None] = relationship(back_populates="vehicle_listings", foreign_keys=[seller_id])
-    sub_seller: Mapped[User | None] = relationship(foreign_keys=[sub_seller_id])
+    sub_seller: Mapped[SubSeller | None] = relationship()
     created_by: Mapped[User | None] = relationship(foreign_keys=[created_by_id])
     make: Mapped[VehicleMake | None] = relationship()
     model: Mapped[VehicleModel | None] = relationship()
