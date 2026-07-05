@@ -173,7 +173,7 @@ def _seed(
                 "parent_id": None,
                 "label_en": "Home",
                 "label_ar": "الصفحة الرئيسية",
-                "url": "/seller-buyer/home",
+                "url": "/",
                 "opens_new_tab": False,
                 "sort_order": 1,
             },

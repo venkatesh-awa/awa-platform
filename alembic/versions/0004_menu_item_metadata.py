@@ -68,7 +68,7 @@ def upgrade() -> None:
             {
                 "id": admin_id,
                 "parent_id": None,
-                "label_en": "Admin Menu",
+                "label_en": "Admin",
                 "label_ar": "قائمة الإدارة",
                 "url": "#",
                 "icon_class": "fa-solid fa-user-shield",
@@ -156,7 +156,7 @@ def downgrade() -> None:
             """
             DELETE FROM menu_items
             WHERE item_type IN ('notification', 'profile')
-               OR label_en IN ('Admin Menu', 'Dashboard', 'Auctions', 'Users')
+               OR label_en IN ('Admin', 'Dashboard', 'Auctions', 'Users')
             """
         )
     )

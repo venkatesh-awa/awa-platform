@@ -3,7 +3,7 @@
 Unauthenticated by design, like api/v1/content.py: this only serves
 navigation labels/icons, never seller or user data. The frontend still gates
 the "Admin" entry point behind the authenticated header menu (see
-models/content.py's Admin Menu seed) - actual seller/user data endpoints
+models/content.py's Admin seed) - actual seller/user data endpoints
 will need their own auth once they exist.
 """
 

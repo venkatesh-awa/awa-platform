@@ -73,6 +73,8 @@ _OPERATIONS_CARDS: list[tuple[str, str, str, str]] = [
 
 
 def upgrade() -> None:
+    op.add_column("admin_dashboard_cards", sa.Column("image_url", sa.String(length=500), nullable=True))
+
     cards = sa.table(
         "admin_dashboard_cards",
         sa.column("id", sa.Uuid(as_uuid=True)),
@@ -104,3 +106,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.execute(sa.text("DELETE FROM admin_dashboard_cards WHERE section_key = 'operations'"))
+    op.drop_column("admin_dashboard_cards", "image_url")
